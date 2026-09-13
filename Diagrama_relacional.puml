@@ -90,14 +90,14 @@ entity "consultas_veterinarias" as consultas_veterinarias {
   servicios_adicionales : TEXT
 }
 
-entity "historial_mascota" as HistorialMascota {
-  * **idHistorialMascota** : INT <<PK>>
+entity "historial_mascota" as historial_mascota {
+  * **id_historial_mascota** : INT <<PK>>
   --
-  * **idMascota** : INT <<FK>>
-  consultaPrev : DATE
-  VacunasColocadas : VARCHAR(100)
-  fechaVacunas : DATE
-  nombreMedic : VARCHAR(100)
+  * **id_mascota** : INT <<FK>>
+  consulta_previa : DATE
+  vacunas_colocadas : VARCHAR(100)
+  fecha_vacunas : DATE
+  nombre_medicamento : VARCHAR(100)
 }
 
 ' Relaciones entre tablas
@@ -108,8 +108,6 @@ mascotas ||--|{ citas : "1:N"
 veterinarios ||--|{ citas : "1:N"
 servicios ||--|{ citas : "1:N"
 citas ||--o| consultas_veterinarias : "1:1"
-mascotas ||--|{ consultas_veterinarias : "1:N"
-veterinarios ||--|{ consultas_veterinarias : "1:N"
-mascotas ||--|{ HistorialMascota : "1:N"
+mascotas ||--|{ historial_mascota : "1:N"
 
 @enduml
