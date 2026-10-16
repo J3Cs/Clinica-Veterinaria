@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     build:
@@ -11,7 +13,7 @@ services:
       - ./src:/var/www/html
     environment:
       - DB_HOST=db
-      - DB_NAME=app_db
+      - DB_NAME=clinica_veterinaria  # Actualizado al nombre de tu base de datos
       - DB_USER=app_user
       - DB_PASS=app_password
       - APP_DEBUG=true
@@ -23,7 +25,7 @@ services:
     container_name: mysql_dual
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: app_db
+      MYSQL_DATABASE: clinica_veterinaria # Nombre de la BD que se creará por defecto
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
       MYSQL_ROOT_PASSWORD: root_password
@@ -31,6 +33,8 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # <-- AQUÍ SE INICIALIZA LA BD
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   mysql_data:
