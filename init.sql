@@ -47,11 +47,14 @@ CREATE TABLE `veterinarios` (
 -- 3. Tabla: propietarios
 CREATE TABLE `propietarios` (
   `id_propietario` INT AUTO_INCREMENT PRIMARY KEY,
+  `dui`            CHAR(10) NOT NULL COMMENT 'Formato #########-# (9 dígitos + guion + 1 dígito)',
   `nombre_completo` VARCHAR(150) NOT NULL,
   `direccion` TEXT DEFAULT NULL,
   `telefono` VARCHAR(20) DEFAULT NULL,
   `correo` VARCHAR(150) DEFAULT NULL,
-  `fecha_registro` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `activo` TINYINT(1) NOT NULL DEFAULT 1,
+  `fecha_registro` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `uq_propietarios_dui` UNIQUE (`dui`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Tabla: mascotas
@@ -148,6 +151,6 @@ CREATE TABLE `historial_mascota` (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insertar usuario administrador por defecto (password: Admin123!)
-INSERT INTO `usuarios` (`nombre`, `correo`, `usuario`, `contrasena`, `rol`, `activo`) 
-VALUES ('Administrador General', 'admin@clinica.com', 'admin_master', '$2y$12$eImiTXuWVxfM37uY4JANjO...eW17p1yU/JvF9lW8.', 'administrador', 1);
+-- Fin del esquema base. El administrador inicial se crea mediante:
+--   php init_admin.php
+-- (script CLI ubicado en la raíz del proyecto, ver ADM-01)

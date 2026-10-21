@@ -11,7 +11,7 @@ class Database {
         if (self::$instance === null) {
             // Si está en Docker usa 'db', si está en XAMPP usa 'localhost'
             $host = getenv('DB_HOST') ?: 'localhost';
-            $db   = getenv('DB_NAME') ?: 'app_db';
+            $db   = getenv('DB_NAME') ?: 'clinica_veterinaria';
             $user = getenv('DB_USER') ?: 'root';
             $pass = getenv('DB_PASS') ?: '';
             
