@@ -3,7 +3,7 @@
  * Punto de entrada de la aplicación — Clínica Veterinaria
  *
  * Responsabilidades de este archivo (únicamente):
- *   1. Registrar el autoloader PSR-4 manual
+ *   1. Registrar el autoloader PSR-4 manual (TEC-01)
  *   2. Registrar el manejador de errores
  *   3. Iniciar sesión PHP
  *   4. Instanciar el Router y definir las rutas
@@ -38,14 +38,16 @@ use App\Controllers\DashboardController;
 
 $router = new Router();
 
-// Rutas públicas
-$router->get('/',        AuthController::class, 'showLogin');
-$router->get('/login',   AuthController::class, 'showLogin');
-$router->post('/login',  AuthController::class, 'handleLogin');
-$router->get('/logout',  AuthController::class, 'logout');
+// Rutas públicas de autenticación (US-01)
+$router->get('/',                  AuthController::class, 'showLogin');
+$router->get('/login',             AuthController::class, 'showLogin');
+$router->post('/login',            AuthController::class, 'handleLogin');
+$router->get('/logout',            AuthController::class, 'logout');
 
-// Rutas protegidas — la autenticación se verifica dentro del controlador (ACC-01)
-$router->get('/dashboard', DashboardController::class, 'index');
+// Rutas protegidas — la autenticación y rol se verifican en el controlador (ACC-01)
+$router->get('/dashboard',          DashboardController::class, 'index');
+$router->get('/admin/dashboard',    DashboardController::class, 'admin');
+$router->get('/veterinario/agenda', DashboardController::class, 'veterinario');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();

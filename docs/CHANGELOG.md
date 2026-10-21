@@ -5,6 +5,23 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-01] — 2026-10-21 — Autenticación y Control de Acceso (T-009 a T-015)
+
+### Added
+- **`src/app/Models/UsuarioModel.php`** — Búsqueda dual parametrizada por nombre de usuario o correo (`findByIdentifier`) y por ID (`findById`) (T-009).
+- **`src/app/Repositories/UsuarioRepository.php`** — Filtrado de cuentas activas (`findActiveByIdentifier`) y consulta de estado (`isActive`) (T-010).
+- **`src/app/Services/AuthService.php`** — Lógica de negocio con respuestas estructuradas, validación de cuentas activas, prevención de session fixation (`session_regenerate_id`) y logout seguro (T-011).
+- **`src/app/Controllers/AuthController.php`** — Coordinación web, alias en español (`mostrarFormulario`, `iniciarSesion`, `cerrarSesion`), flash messages y **redirección según rol** (`administrador` $\rightarrow$ `/admin/dashboard`, `veterinario` $\rightarrow$ `/veterinario/agenda`) (T-012).
+- **`src/app/Controllers/DashboardController.php`** — Vistas protegidas para administrador y veterinario con validación de roles (`AuthMiddleware::requireRole`) (T-012, ACC-01).
+- **`src/app/Views/auth/login.php`** — Formulario de acceso semántico con campo unificado usuario/correo, mensajes accesibles y navegación por teclado (T-013).
+- **`src/app/Views/dashboard/admin.php`** y **`src/app/Views/dashboard/veterinario.php`** — Paneles específicos por rol.
+- **`src/public/js/main.js`** — Validación visual interactiva en cliente sin sustituir la validación del servidor (T-014).
+- **`src/public/css/style.css`** — Estilos para `.is-invalid`, `:focus-visible`, alertas y adaptabilidad responsive móvil/desktop (T-014, UI-01).
+- **`pruebas/manuales/RF01-autenticacion.md`** — Matriz de 12 casos de prueba manuales documentados (T-015).
+- **`pruebas/test_autenticacion.php`** — Suite automatizada con 12 aserciones nativas en PHP sin dependencias (T-015, TEC-01).
+
+---
+
 ## [I0] — 2026-10-21 — Base Técnica MVC (US-00)
 
 ### Added
