@@ -250,6 +250,97 @@ img { max-width: 100%; display: block; }
     color: var(--color-text-muted);
 }
 
+/* ── Formularios y Tablas para Módulos de Gestión (US-02, UI-01) ── */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+.form-actions {
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.card-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+}
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: .5rem;
+}
+.table th, .table td {
+    padding: .75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    font-size: .9rem;
+}
+.table th {
+    background-color: var(--color-bg);
+    color: var(--color-primary-dk);
+    font-weight: 600;
+}
+.table tr:hover {
+    background-color: rgba(44, 107, 79, 0.04);
+}
+.btn-outline-dark {
+    background: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+.btn-outline-dark:hover {
+    background: var(--color-border);
+    text-decoration: none;
+}
+.text-danger {
+    color: var(--color-danger);
+    font-weight: bold;
+}
+.invalid-feedback {
+    display: block;
+    margin-top: .3rem;
+    font-size: .8rem;
+    color: var(--color-danger);
+    font-weight: 500;
+}
+
+/* ── Estados Vacíos (Empty States) ──────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: var(--color-bg);
+    border: 1.5px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    margin-top: 1.5rem;
+}
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: .75rem;
+    line-height: 1;
+}
+.empty-state h3 {
+    color: var(--color-primary-dk);
+    margin-bottom: .5rem;
+    font-size: 1.2rem;
+}
+.empty-state p {
+    color: var(--color-text-muted);
+    margin-bottom: 1.25rem;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* ── Adaptabilidad Responsive (UI-01) ───────────────────────────── */
 @media (max-width: 480px) {
     .login-card {
@@ -262,6 +353,10 @@ img { max-width: 100%; display: block; }
     .navbar {
         flex-direction: column;
         gap: .5rem;
+        align-items: flex-start;
+    }
+    .card-header-actions {
+        flex-direction: column;
         align-items: flex-start;
     }
 }

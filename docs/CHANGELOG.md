@@ -5,6 +5,23 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-02] — 2026-10-21 — Gestión de Propietarios (T-016 a T-022, T-087)
+
+### Added
+- **`database/migrations/002_propietarios_dui.sql`** — Migración SQL versionada que asegura el campo `dui CHAR(10) NOT NULL UNIQUE` (T-087, UNI-01).
+- **`src/app/Models/PropietarioModel.php`** — Modelo con consultas preparadas PDO para inserción, búsqueda por DUI único, ID y listado (T-016).
+- **`src/app/Repositories/PropietarioRepository.php`** — Repositorio desacoplado con filtros de unicidad de DUI y estado activo (T-017).
+- **`src/app/Services/PropietariosMascotasService.php`** — Lógica de negocio: normalización automática a formato salvadoreño `########-#`, validación regex, rechazo de DUI duplicado, validación de correo opcional y soporte de teléfonos compartidos (T-018, UNI-01).
+- **`src/app/Controllers/PropietarioController.php`** — Controlador con autorización exclusiva para administrador (`AuthMiddleware::requireRole('administrador')`), validación CSRF y persistencia de datos previos ante errores (T-019, ACC-01, SEC-01).
+- **`src/app/Views/propietarios/crear.php`** — Formulario semántico HTML5 accesible por teclado con repoblación segura de campos y mensajes de error específicos (T-020, UI-01).
+- **`src/app/Views/propietarios/index.php`** — Tabla de listado de propietarios registrados con acciones directas de alta (T-019).
+- **`src/public/js/propietarios.js`** — Formateo/máscara automática de DUI en cliente y validación visual interactiva en JavaScript nativo (T-021, TEC-01).
+- **`src/public/css/style.css`** — Estilos para formulario en cuadrícula (`.form-grid`), tablas de datos responsivas y feedback de validación (T-021).
+- **`pruebas/manuales/RF02-propietarios.md`** — Matriz de 11 casos de prueba manuales documentados (T-022).
+- **`pruebas/test_propietarios.php`** — Suite automatizada con 9 aserciones nativas en PHP sin dependencias (T-022, TEC-01).
+
+---
+
 ## [US-01] — 2026-10-21 — Autenticación y Control de Acceso (T-009 a T-015)
 
 ### Added

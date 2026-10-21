@@ -20,6 +20,8 @@
 <nav class="navbar">
     <div class="navbar-brand">🐾 Clínica Veterinaria</div>
     <div class="navbar-info">
+        <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
+        <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
         <span class="navbar-user">
             <?= $nombre ?> &middot; <span class="badge badge-admin">Administrador</span>
         </span>
@@ -34,6 +36,14 @@
         <p>Has iniciado sesión con el rol de <strong>Administrador</strong>.</p>
         <div class="alert alert-info mt-1">
             Módulo administrativo: Gestión de usuarios, configuración clínica y auditoría de accesos.
+        </div>
+
+        <div class="mt-2">
+            <h3>Módulos de Gestión</h3>
+            <div class="form-actions mt-1">
+                <a href="/propietarios" class="btn btn-primary">Directorio de Propietarios</a>
+                <a href="/propietarios/crear" class="btn btn-outline-dark">+ Registrar Nuevo Propietario</a>
+            </div>
         </div>
     </div>
 </main>

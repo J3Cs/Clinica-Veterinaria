@@ -25,7 +25,7 @@
         <header class="login-header">
             <div class="login-logo" aria-hidden="true">🐾</div>
             <h1 id="login-title">Clínica Veterinaria</h1>
-            <p class="login-subtitle">Sistema de Gestión Clínica — Acceso Autorizado</p>
+            <p class="login-subtitle">Sistema de Gestión Clínica</p>
         </header>
 
         <!-- Contenedor accesible para notificaciones y alertas -->

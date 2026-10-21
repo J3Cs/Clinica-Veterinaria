@@ -35,6 +35,7 @@ session_start();
 use App\Router;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
+use App\Controllers\PropietarioController;
 
 $router = new Router();
 
@@ -48,6 +49,11 @@ $router->get('/logout',            AuthController::class, 'logout');
 $router->get('/dashboard',          DashboardController::class, 'index');
 $router->get('/admin/dashboard',    DashboardController::class, 'admin');
 $router->get('/veterinario/agenda', DashboardController::class, 'veterinario');
+
+// Rutas de gestión de propietarios (US-02)
+$router->get('/propietarios',       PropietarioController::class, 'index');
+$router->get('/propietarios/crear', PropietarioController::class, 'create');
+$router->post('/propietarios',      PropietarioController::class, 'store');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();
