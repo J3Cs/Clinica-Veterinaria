@@ -32,6 +32,19 @@
 </nav>
 
 <main class="container mt-2">
+
+    <?php if (!empty($propietarios)): ?>
+    <!-- ── Componente Buscador Reutilizable ────────────────────────── -->
+    <?php
+    $searchId         = 'propietario-search';
+    $placeholder      = 'Buscar por nombre, DUI, teléfono o correo...';
+    $ariaLabel        = 'Buscar propietarios';
+    $showLiveDropdown = true;
+    $showCount        = true;
+    require __DIR__ . '/../components/search_bar.php';
+    ?>
+    <?php endif; ?>
+
     <div class="card">
         <div class="card-header-actions">
             <div>
@@ -63,7 +76,7 @@
             </div>
         <?php else: ?>
             <div class="table-responsive mt-2">
-                <table class="table">
+                <table class="table" id="propietarios-table">
                     <thead>
                         <tr>
                             <th>DUI</th>
@@ -74,9 +87,9 @@
                             <th>Estado</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="propietarios-table-body">
                         <?php foreach ($propietarios as $p): ?>
-                            <tr>
+                            <tr class="propietario-row">
                                 <td><strong><?= htmlspecialchars($p['dui'], ENT_QUOTES, 'UTF-8') ?></strong></td>
                                 <td><?= htmlspecialchars($p['nombre_completo'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($p['telefono'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
@@ -89,6 +102,16 @@
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <!-- Fila que aparece cuando el buscador no encuentra resultados -->
+                        <tr id="propietarios-no-matches-row" style="display:none;">
+                            <td colspan="6">
+                                <div class="search-no-results" aria-live="polite">
+                                    <span style="font-size:1.8rem; display:block; margin-bottom:.5rem;">🔍</span>
+                                    Ningún propietario coincide con tu búsqueda.
+                                    <br><small>Intenta con el nombre, DUI, teléfono o correo.</small>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -96,6 +119,18 @@
     </div>
 </main>
 
+<script src="/js/search-component.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    initTableSearch({
+        searchId: 'propietario-search',
+        tableBodyId: 'propietarios-table-body',
+        rowSelector: 'tr.propietario-row',
+        noMatchesRowId: 'propietarios-no-matches-row',
+        entityNameSingular: 'propietario',
+        entityNamePlural: 'propietarios'
+    });
+});
+</script>
 </body>
 </html>
-

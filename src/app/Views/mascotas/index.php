@@ -35,41 +35,15 @@
 <main class="container mt-2">
 
     <?php if (!empty($mascotas)): ?>
-    <!-- ── Buscador Dinámico — ENCIMA de la card principal ─────────── -->
-    <div class="search-card">
-        <div class="search-form-group">
-            <div class="search-input-wrapper">
-                <span class="search-icon-badge" aria-hidden="true">🔍</span>
-                <input
-                    type="search"
-                    id="pet-search-input"
-                    class="search-input-field"
-                    placeholder="Buscar por nombre de mascota o propietario..."
-                    autocomplete="off"
-                    aria-label="Buscar mascotas por nombre o propietario"
-                    aria-expanded="false"
-                    aria-haspopup="listbox"
-                    aria-controls="pet-search-dropdown"
-                >
-                <button
-                    type="button"
-                    id="pet-search-clear"
-                    class="search-clear-btn"
-                    title="Limpiar búsqueda"
-                    aria-label="Limpiar búsqueda"
-                >✕</button>
-            </div>
-            <!-- Dropdown de sugerencias en vivo -->
-            <div
-                id="pet-search-dropdown"
-                class="search-live-dropdown"
-                role="listbox"
-                aria-label="Sugerencias de búsqueda"
-            ></div>
-        </div>
-        <!-- Contador de resultados -->
-        <div class="search-result-count" id="pet-search-count" aria-live="polite"></div>
-    </div>
+    <!-- ── Componente Buscador Reutilizable ────────────────────────── -->
+    <?php
+    $searchId          = 'pet-search';
+    $placeholder       = 'Buscar por nombre de mascota o propietario...';
+    $ariaLabel         = 'Buscar mascotas por nombre o propietario';
+    $showLiveDropdown  = true;
+    $showCount         = true;
+    require __DIR__ . '/../components/search_bar.php';
+    ?>
     <?php endif; ?>
 
     <!-- ── Card Principal: Tabla de Expedientes ────────────────────── -->
@@ -81,7 +55,7 @@
             </div>
             <?php if ($rolUsuario === 'administrador'): ?>
                 <div>
-                    <a href="/mascotas/crear" class="btn btn-primary">+ Registrar Mascota</a>
+                    <a href="/mascotas/crear" class="btn btn-primary">+ Registrar Nueva Mascota</a>
                 </div>
             <?php endif; ?>
         </div>
@@ -101,52 +75,57 @@
         <?php endif; ?>
 
         <?php if (empty($mascotas)): ?>
+            <!-- Estado vacío (empty state) -->
             <div class="empty-state" role="status">
                 <div class="empty-state-icon" aria-hidden="true">🐾</div>
                 <h3>No hay mascotas registradas</h3>
-                <p>Actualmente no se encuentra ninguna mascota registrada en el sistema clínico.</p>
+                <p>Actualmente no se encuentra ningún paciente registrado en la clínica veterinaria.</p>
                 <?php if ($rolUsuario === 'administrador'): ?>
                     <a href="/mascotas/crear" class="btn btn-primary">+ Registrar la Primera Mascota</a>
                 <?php endif; ?>
             </div>
         <?php else: ?>
             <div class="table-responsive mt-2">
-                <table class="table" id="pets-table">
+                <table class="table" id="pets-table" aria-describedby="pet-search-count">
                     <thead>
                         <tr>
-                            <th>Nombre</th>
-                            <th>Especie / Raza</th>
-                            <th>Sexo</th>
-                            <th>Propietario Responsable</th>
-                            <th>DUI Propietario</th>
-                            <th>Fecha Nacimiento</th>
-                            <th>Estado</th>
+                            <th scope="col">Mascota</th>
+                            <th scope="col">Especie / Raza</th>
+                            <th scope="col">Sexo</th>
+                            <th scope="col">Propietario Titular</th>
+                            <th scope="col">DUI Propietario</th>
+                            <th scope="col">F. Nacimiento</th>
+                            <th scope="col">Estado</th>
                         </tr>
                     </thead>
                     <tbody id="pets-table-body">
                         <?php foreach ($mascotas as $m): ?>
-                            <tr class="pet-row"
-                                data-nombre="<?= htmlspecialchars($m['nombre'], ENT_QUOTES, 'UTF-8') ?>"
-                                data-propietario="<?= htmlspecialchars($m['propietario_nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                            <tr
+                                class="pet-row"
+                                data-id="<?= (int)$m['id_mascota'] ?>"
+                                data-nombre="<?= htmlspecialchars(mb_strtolower($m['nombre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                data-propietario="<?= htmlspecialchars(mb_strtolower($m['propietario_nombre'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                data-especie="<?= htmlspecialchars(mb_strtolower($m['especie'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                data-raza="<?= htmlspecialchars(mb_strtolower($m['raza'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                                 data-dui="<?= htmlspecialchars($m['propietario_dui'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                data-especie="<?= htmlspecialchars($m['especie'], ENT_QUOTES, 'UTF-8') ?>"
-                                data-raza="<?= htmlspecialchars($m['raza'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                             >
                                 <td>
-                                    <strong>🐾 <?= htmlspecialchars($m['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
+                                    <strong><?= htmlspecialchars($m['nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
                                     <?php if (!empty($m['caracteristicas_relevantes'])): ?>
-                                        <br><small class="text-muted" title="<?= htmlspecialchars($m['caracteristicas_relevantes'], ENT_QUOTES, 'UTF-8') ?>">
-                                            <?= htmlspecialchars(mb_strimwidth($m['caracteristicas_relevantes'], 0, 45, '...'), ENT_QUOTES, 'UTF-8') ?>
+                                        <small class="text-muted d-block" title="<?= htmlspecialchars($m['caracteristicas_relevantes'], ENT_QUOTES, 'UTF-8') ?>">
+                                            📝 <?= htmlspecialchars(mb_strimwidth($m['caracteristicas_relevantes'], 0, 35, '...'), ENT_QUOTES, 'UTF-8') ?>
                                         </small>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <?= htmlspecialchars($m['especie'], ENT_QUOTES, 'UTF-8') ?>
-                                    <br><small class="text-muted"><?= htmlspecialchars($m['raza'] ?? 'No especificada', ENT_QUOTES, 'UTF-8') ?></small>
+                                    <?php if (!empty($m['raza'])): ?>
+                                        <small class="text-muted d-block"><?= htmlspecialchars($m['raza'], ENT_QUOTES, 'UTF-8') ?></small>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
-                                    <span class="badge" style="background: <?= $m['sexo'] === 'Macho' ? '#2980b9' : '#8e44ad' ?>; color:#fff;">
-                                        <?= htmlspecialchars($m['sexo'], ENT_QUOTES, 'UTF-8') ?>
+                                    <span class="sexo-tag sexo-<?= mb_strtolower($m['sexo'] ?? '') ?>">
+                                        <?= $m['sexo'] === 'Macho' ? '♂ Macho' : '♀ Hembra' ?>
                                     </span>
                                 </td>
                                 <td><?= htmlspecialchars($m['propietario_nombre'] ?? 'Sin asignar', ENT_QUOTES, 'UTF-8') ?></td>
