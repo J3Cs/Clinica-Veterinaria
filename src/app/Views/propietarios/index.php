@@ -23,6 +23,7 @@
     <div class="navbar-info">
         <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
         <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
+        <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
         <span class="navbar-user">
             <?= $nombreUsuario ?> &middot; <span class="badge badge-<?= $rolUsuario === 'administrador' ? 'admin' : 'vet' ?>"><?= ucfirst($rolUsuario) ?></span>
         </span>

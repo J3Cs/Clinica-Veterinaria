@@ -5,6 +5,30 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-03] — 2026-10-21 — Gestión y Registro de Mascotas (T-023 a T-029, RF03, DAT-01, BAJA-01, UI-01)
+
+### Added
+- **`database/migrations/003_mascotas_activo.sql`** — Migración para asegurar la columna `activo TINYINT(1) NOT NULL DEFAULT 1` en la tabla `mascotas` para soporte de bajas lógicas e integridad histórica (BAJA-01).
+- **`src/app/Models/MascotaModel.php`** y **`src/app/Models/Mascota.php`** — Modelo de datos con sentencias preparadas PDO para inserción segura, búsqueda por ID, listado general con `JOIN` a propietarios, conteo y alias `Mascota` (T-023, ARQ-01, SEC-01, DAT-01).
+- **`src/app/Repositories/MascotaRepository.php`** — Repositorio desacoplado para la entidad Mascota con filtrado de estados activos y validación de clave foránea (T-024, ARQ-01, BAJA-01, DAT-01).
+- **`src/app/Services/PropietariosMascotasService.php`** — Lógica de negocio de mascotas: verificación estricta de propietario existente y activo (`DAT-01`), validación de campos obligatorios (nombre, especie, raza, sexo), validación de fecha de nacimiento no futura y soporte de campos opcionales preservando caracteres especiales (T-025).
+- **`src/app/Controllers/MascotaController.php`** — Controlador con autorización exclusiva para administrador (`AuthMiddleware::requireRole('administrador')`), validación de token CSRF, recarga de propietarios activos y redirección tras alta con mensaje de éxito (T-026, ACC-01, SEC-01).
+- **`src/app/Views/mascotas/crear.php`** — Formulario semántico accesible de alta de mascotas concordante con el login, selector de propietarios reales, aviso cuando no hay propietarios y persistencia segura de datos ante fallos (T-027, UI-01, DAT-01).
+- **`src/app/Views/mascotas/index.php`** — Tabla de expedientes de pacientes con datos de la mascota y del propietario, badges de sexo (`Macho` / `Hembra`), estado activo y empty state amigable (T-027, UI-01).
+- **`src/public/js/mascotas.js`**, **`src/public/assets/js/mascotas.js`** y **`src/public/assets/css/mascotas.css`** — Scripts cliente en JavaScript nativo con validación visual interactiva en tiempo real y estilos responsivos adaptables (T-028, TEC-01, UI-01).
+- **`pruebas/manuales/RF03-mascotas.md`** — Matriz de 12 casos de prueba manuales documentados que verifican mascota válida, falta de propietario, FK inválida y campos requeridos (T-029).
+- **`pruebas/test_mascotas.php`** — Suite automatizada con 12 aserciones nativas en PHP sin dependencias (100% de cobertura funcional) (T-029, TEC-01).
+
+### Changed
+- **`init.sql`** — Agregada columna `activo TINYINT(1) NOT NULL DEFAULT 1` a la tabla `mascotas` para nuevas instalaciones (BAJA-01).
+- **`src/public/index.php`** — Registro de rutas `/mascotas`, `/mascotas/crear` (GET) y `/mascotas` (POST) (T-026).
+- **`src/app/Views/dashboard/admin.php`**, **`src/app/Views/propietarios/index.php`**, **`src/app/Views/propietarios/crear.php`** — Barra de navegación actualizada con enlace a Mascotas.
+
+### Decisions
+- Ver `docs/adr/ADR-005-integridad-mascotas-propietario.md` (Integridad referencial y bajas lógicas)
+
+---
+
 ## [US-02] — 2026-10-21 — Gestión de Propietarios (T-016 a T-022, T-087)
 
 ### Added

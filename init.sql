@@ -67,6 +67,7 @@ CREATE TABLE `mascotas` (
   `sexo` ENUM('Macho', 'Hembra') NOT NULL,
   `fecha_nacimiento` DATE DEFAULT NULL,
   `caracteristicas_relevantes` TEXT DEFAULT NULL,
+  `activo` TINYINT(1) NOT NULL DEFAULT 1,
   `fecha_registro` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `fk_mascotas_propietarios` 
     FOREIGN KEY (`id_propietario`) REFERENCES `propietarios` (`id_propietario`) 

@@ -48,6 +48,7 @@ spl_autoload_register(function (string $class) {
 
 use App\Services\PropietariosMascotasService;
 use App\Repositories\PropietarioRepository;
+use App\Repositories\MascotaRepository;
 use App\Models\PropietarioModel;
 
 $totalTests = 0;
@@ -71,7 +72,8 @@ function runTest(string $description, callable $testFn): void {
 // ────────────────────────────────────────────────────────────────── //
 // GRUPO 1: Normalización y Validación de Formato de DUI (UNI-01)
 // ────────────────────────────────────────────────────────────────── //
-$service = new PropietariosMascotasService();
+$stubMascotaRepo = new class extends MascotaRepository { public function __construct() {} };
+$service = new PropietariosMascotasService(new class extends PropietarioRepository { public function __construct() {} }, $stubMascotaRepo);
 
 runTest('UNI-01: Normalizacion de DUI de 9 digitos continuos a ########-#', function () use ($service) {
     $resultado = $service->normalizarDui('012345678');
@@ -160,7 +162,7 @@ $mockPropietarios = [
 
 $testModel = new TestPropietarioModelMock($mockPropietarios);
 $testRepo  = new PropietarioRepository($testModel);
-$testService = new PropietariosMascotasService($testRepo);
+$testService = new PropietariosMascotasService($testRepo, $stubMascotaRepo);
 
 runTest('T-018: Rechazo de alta si el nombre completo esta vacio o tiene menos de 3 caracteres', function () use ($testService) {
     $res1 = $testService->registrarPropietario(['nombre_completo' => '', 'dui' => '05555555-5']);

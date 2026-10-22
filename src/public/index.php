@@ -36,6 +36,7 @@ use App\Router;
 use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\PropietarioController;
+use App\Controllers\MascotaController;
 
 $router = new Router();
 
@@ -54,6 +55,11 @@ $router->get('/veterinario/agenda', DashboardController::class, 'veterinario');
 $router->get('/propietarios',       PropietarioController::class, 'index');
 $router->get('/propietarios/crear', PropietarioController::class, 'create');
 $router->post('/propietarios',      PropietarioController::class, 'store');
+
+// Rutas de gestión de mascotas (US-03)
+$router->get('/mascotas',           MascotaController::class, 'index');
+$router->get('/mascotas/crear',     MascotaController::class, 'create');
+$router->post('/mascotas',          MascotaController::class, 'store');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();
