@@ -10,7 +10,9 @@ class ErrorHandlerMiddleware {
 
     public static function handleException($exception) {
         http_response_code(500);
-        $debug = (getenv('APP_DEBUG') === 'true') || true; // En XAMPP por defecto ideal mostrar errores de desarrollo
+        $debug = filter_var(getenv('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN);
+        // Siempre registrar el detalle en el log del servidor, nunca al usuario en producción (SEC-01)
+        error_log(sprintf('[%s] %s en %s:%d', get_class($exception), $exception->getMessage(), $exception->getFile(), $exception->getLine()));
 
         if ($debug) {
             echo "<div style='background: #f8d7da; color: #721c24; padding: 20px; font-family: monospace; border-left: 5px solid #dc3545; margin: 20px;'>";

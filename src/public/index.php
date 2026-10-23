@@ -28,6 +28,9 @@ spl_autoload_register(function (string $class) {
 use App\Middlewares\ErrorHandlerMiddleware;
 ErrorHandlerMiddleware::register();
 
+// ── 2b. Zona horaria (las citas dependen de la hora local de la clínica) ── //
+date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'America/El_Salvador');
+
 // ── 3. Sesión ───────────────────────────────────────────────────── //
 session_start();
 
@@ -37,6 +40,7 @@ use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\PropietarioController;
 use App\Controllers\MascotaController;
+use App\Controllers\CitaController;
 
 $router = new Router();
 
@@ -60,6 +64,10 @@ $router->post('/propietarios',      PropietarioController::class, 'store');
 $router->get('/mascotas',           MascotaController::class, 'index');
 $router->get('/mascotas/crear',     MascotaController::class, 'create');
 $router->post('/mascotas',          MascotaController::class, 'store');
+
+// Rutas de agendamiento de citas (US-04)
+$router->get('/citas/crear',        CitaController::class, 'create');
+$router->post('/citas',              CitaController::class, 'store');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();

@@ -23,6 +23,7 @@
         <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
         <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
         <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
+        <a href="/citas/crear" class="btn btn-sm btn-outline">Citas</a>
         <span class="navbar-user">
             <?= $nombre ?> &middot; <span class="badge badge-admin">Administrador</span>
         </span>
@@ -46,6 +47,7 @@
                 <a href="/propietarios/crear" class="btn btn-outline-dark">+ Registrar Nuevo Propietario</a>
                 <a href="/mascotas" class="btn btn-primary">Expedientes de Mascotas</a>
                 <a href="/mascotas/crear" class="btn btn-outline-dark">+ Registrar Nueva Mascota</a>
+                <a href="/citas/crear" class="btn btn-primary">Agendar Cita</a>
             </div>
         </div>
     </div>

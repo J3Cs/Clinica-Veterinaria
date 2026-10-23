@@ -5,6 +5,40 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-04] — 2026-10-23 — Agendamiento de Citas (T-030 a T-036, RF04)
+
+### Added
+- **`CitaModel`** (estados Programada/Atendida/Cancelada, citas por veterinario/fecha/estado, transacción), **`ServicioModel`**, **`HorarioAtencionModel`**, **`VeterinarioModel`** (T-030).
+- **`CitaRepository`**, **`HorarioAtencionRepository`**, **`ServicioRepository`**, **`VeterinarioRepository`** — ocupación (excluye canceladas) y disponibilidad con parámetros preparados (T-031).
+- **`CitaService`** — cálculo de franjas, rechazo de horas fuera de horario, solapadas o pasadas, y revalidación en transacción con bloqueo del veterinario (T-032).
+- **`CitaController`** — `GET /citas/crear` y `POST /citas`, solo administrador, solo campos esperados, CSRF (T-033).
+- **`Views/citas/crear.php`** — formulario con horarios disponibles, mensajes sin cupo y estados vacíos (T-034).
+- **`public/assets/js/citas.js`** y **`citas.css`** — validación previa y resumen de confirmación con JS nativo; el flujo funciona sin JS (T-035).
+- **`pruebas/test_citas.php`** (18), **`pruebas/test_citas_integracion.php`** (8, contra MySQL, con 8 procesos concurrentes) y **`pruebas/manuales/RF04-agendamiento.md`** (21 casos) (T-036).
+- **`database/migrations/005_citas_indice_disponibilidad.sql`** y **`database/seeds/dev_citas_seed.sql`** (solo desarrollo: US-09/10/11 aún no existen).
+
+### Changed
+- **`index.php`** — rutas de citas y zona horaria `America/El_Salvador` (`APP_TIMEZONE`).
+- **`MascotaModel::findById`** expone `propietario_activo`; **`admin.php`** enlaza a Citas; **`init.sql`** incluye el índice de disponibilidad.
+
+### Decisions
+- Ver `docs/adr/ADR-006-agendamiento-citas-concurrencia.md`
+
+---
+
+## [Seguridad] — 2026-10-22 — Endurecimiento tras revisión (SEC-01, BAJA-01)
+
+### Fixed
+- **`ErrorHandlerMiddleware`** — El modo debug estaba siempre activo (`|| true`). Ahora depende de `APP_DEBUG` y el detalle se registra con `error_log`.
+- **`CsrfMiddleware`** — Se rechazan tokens vacíos (`hash_equals('', '')` era `true`).
+- **`init.sql`** — Ya no contiene `DROP TABLE` (usa `CREATE TABLE IF NOT EXISTS`). El reinicio destructivo pasa a `database/dev_reset.sql`.
+- **FK clínicas** — `ON DELETE CASCADE` cambiado a `RESTRICT` (mascotas, citas, consultas, historial, veterinarios) para respetar BAJA-01. Migración `004_fk_restrict.sql` para bases existentes.
+
+### Added
+- **`pruebas/test_csrf.php`** — Pruebas del middleware CSRF.
+
+---
+
 ## [US-03] — 2026-10-21 — Gestión y Registro de Mascotas (T-023 a T-029, RF03, DAT-01, BAJA-01, UI-01)
 
 ### Added

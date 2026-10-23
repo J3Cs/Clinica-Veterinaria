@@ -1,0 +1,327 @@
+<?php
+namespace App\Services;
+
+use App\Repositories\CitaRepository;
+use App\Repositories\HorarioAtencionRepository;
+use App\Repositories\MascotaRepository;
+use App\Repositories\ServicioRepository;
+use App\Repositories\VeterinarioRepository;
+use DateTimeImmutable;
+
+/**
+ * CitaService — US-04 (T-032), ARQ-01, DAT-01, SEC-01
+ * Reglas de negocio del agendamiento de citas:
+ *
+ *  - Solo mascotas, servicios y veterinarios activos.
+ *  - Las franjas se calculan con `horarios_atencion` y la duración del servicio.
+ *  - Una cita no puede solaparse con otra no cancelada del mismo veterinario.
+ *  - La disponibilidad se revalida al guardar, dentro de una transacción que
+ *    bloquea al veterinario, para que dos solicitudes simultáneas no reserven
+ *    el mismo hueco.
+ */
+class CitaService {
+
+    /** Separación, en minutos, entre horas de inicio ofrecidas. */
+    public const PASO_MINUTOS = 15;
+
+    public function __construct(
+        private ?CitaRepository $citaRepo = null,
+        private ?HorarioAtencionRepository $horarioRepo = null,
+        private ?ServicioRepository $servicioRepo = null,
+        private ?VeterinarioRepository $veterinarioRepo = null,
+        private ?MascotaRepository $mascotaRepo = null
+    ) {
+        $this->citaRepo        ??= new CitaRepository();
+        $this->horarioRepo     ??= new HorarioAtencionRepository();
+        $this->servicioRepo    ??= new ServicioRepository();
+        $this->veterinarioRepo ??= new VeterinarioRepository();
+        $this->mascotaRepo     ??= new MascotaRepository();
+    }
+
+    // ────────────────────────────────────────────────────────────────── //
+    //  Opciones del formulario
+    // ────────────────────────────────────────────────────────────────── //
+
+    /**
+     * Registros válidos para poblar los selectores del formulario.
+     *
+     * @return array{mascotas: array, servicios: array, veterinarios: array}
+     */
+    public function obtenerOpciones(): array {
+        return [
+            'mascotas'     => $this->mascotaRepo->listAll(true),
+            'servicios'    => $this->servicioRepo->listActivos(),
+            'veterinarios' => $this->veterinarioRepo->listActivos(),
+        ];
+    }
+
+    // ────────────────────────────────────────────────────────────────── //
+    //  Disponibilidad
+    // ────────────────────────────────────────────────────────────────── //
+
+    /**
+     * Valida la selección y calcula los horarios libres.
+     *
+     * @param array{id_mascota?:mixed,id_servicio?:mixed,id_veterinario?:mixed,fecha?:mixed} $filtros
+     * @return array{
+     *     errors: array<string,string>,
+     *     franjas: string[],
+     *     duracion: int,
+     *     mascota: ?array, servicio: ?array, veterinario: ?array, fecha: ?string
+     * }
+     */
+    public function consultarDisponibilidad(array $filtros, ?DateTimeImmutable $ahora = null): array {
+        $ahora = $ahora ?? new DateTimeImmutable();
+        $sel   = $this->resolverSeleccion($filtros, $ahora);
+
+        $franjas  = [];
+        $duracion = 0;
+        if ($sel['servicio'] !== null) {
+            $duracion = (int) $sel['servicio']['duracion_estimada_min'];
+        }
+
+        if ($sel['errors'] === []) {
+            $franjas = $this->calcularFranjas(
+                (int) $sel['veterinario']['id_veterinario'],
+                $duracion,
+                $sel['fecha'],
+                $ahora
+            );
+        }
+
+        return [
+            'errors'      => $sel['errors'],
+            'franjas'     => $franjas,
+            'duracion'    => $duracion,
+            'mascota'     => $sel['mascota'],
+            'servicio'    => $sel['servicio'],
+            'veterinario' => $sel['veterinario'],
+            'fecha'       => $sel['fecha'],
+        ];
+    }
+
+    /**
+     * Horas de inicio (HH:MM) en las que cabe un servicio de $duracionMin minutos
+     * dentro del horario del veterinario sin solaparse con citas existentes.
+     *
+     * @param bool $bloquear Lectura de bloqueo de las citas (solo dentro de la transacción).
+     * @return string[]
+     */
+    public function calcularFranjas(int $idVeterinario, int $duracionMin, string $fecha, DateTimeImmutable $ahora, bool $bloquear = false): array {
+        if ($duracionMin <= 0) {
+            return [];
+        }
+
+        $dia = (int) DateTimeImmutable::createFromFormat('!Y-m-d', $fecha)->format('N');
+        $bloques = $this->horarioRepo->listByVeterinarioYDia($idVeterinario, $dia);
+        if ($bloques === []) {
+            return [];
+        }
+
+        // Intervalos ocupados [inicio, fin) en minutos desde medianoche.
+        $ocupadas = [];
+        foreach ($this->citaRepo->listOcupadas($idVeterinario, $fecha, $bloquear) as $cita) {
+            $ini = self::aMinutos((string) $cita['hora_cita']);
+            $ocupadas[] = [$ini, $ini + (int) $cita['duracion_estimada_min']];
+        }
+
+        // Si la fecha es hoy, solo horas posteriores al momento actual.
+        $minimo = -1;
+        if ($fecha === $ahora->format('Y-m-d')) {
+            $minimo = (int) $ahora->format('G') * 60 + (int) $ahora->format('i');
+        }
+
+        $inicios = [];
+        foreach ($bloques as $bloque) {
+            $desde = self::aMinutos((string) $bloque['hora_inicio']);
+            $hasta = self::aMinutos((string) $bloque['hora_fin']);
+            for ($s = $desde; $s + $duracionMin <= $hasta; $s += self::PASO_MINUTOS) {
+                if ($s <= $minimo) {
+                    continue;
+                }
+                if ($this->haySolape($s, $s + $duracionMin, $ocupadas)) {
+                    continue;
+                }
+                $inicios[$s] = true;
+            }
+        }
+
+        ksort($inicios);
+        return array_map([self::class, 'formatear'], array_keys($inicios));
+    }
+
+    // ────────────────────────────────────────────────────────────────── //
+    //  Creación de la cita
+    // ────────────────────────────────────────────────────────────────── //
+
+    /**
+     * Agenda una cita. La validación definitiva se hace aquí, dentro de una
+     * transacción que bloquea al veterinario (T-032).
+     *
+     * @param array{id_mascota?:mixed,id_servicio?:mixed,id_veterinario?:mixed,fecha?:mixed,hora_cita?:mixed} $datos
+     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     */
+    public function agendarCita(array $datos, ?DateTimeImmutable $ahora = null): array {
+        $ahora = $ahora ?? new DateTimeImmutable();
+        $sel   = $this->resolverSeleccion($datos, $ahora);
+        $errors = $sel['errors'];
+
+        $hora = trim((string) ($datos['hora_cita'] ?? ''));
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora)) {
+            $errors['hora_cita'] = 'Selecciona un horario disponible.';
+        }
+
+        if ($errors !== []) {
+            return self::fallo('Por favor corrige los errores señalados.', $errors);
+        }
+
+        $idVet    = (int) $sel['veterinario']['id_veterinario'];
+        $duracion = (int) $sel['servicio']['duracion_estimada_min'];
+
+        return $this->citaRepo->transaccion(function () use ($sel, $idVet, $duracion, $hora, $ahora): array {
+            // 1) Serializar reservas del mismo veterinario.
+            if (!$this->veterinarioRepo->bloquearActivo($idVet)) {
+                return self::fallo('Por favor corrige los errores señalados.', [
+                    'id_veterinario' => 'El veterinario seleccionado no existe o no está activo.',
+                ]);
+            }
+
+            // 2) Revalidar con lectura de bloqueo: ve lo último confirmado.
+            $franjas = $this->calcularFranjas($idVet, $duracion, $sel['fecha'], $ahora, true);
+            if (!in_array($hora, $franjas, true)) {
+                return self::fallo(
+                    'El horario seleccionado ya no está disponible. Elige otro de la lista actualizada.',
+                    ['hora_cita' => 'Ese horario ya no está disponible.']
+                );
+            }
+
+            // 3) Persistir.
+            $id = $this->citaRepo->create([
+                'id_mascota'     => (int) $sel['mascota']['id_mascota'],
+                'id_veterinario' => $idVet,
+                'id_servicio'    => (int) $sel['servicio']['id_servicio'],
+                'fecha_cita'     => $sel['fecha'],
+                'hora_cita'      => $hora . ':00',
+                'estado'         => 'Programada',
+            ]);
+
+            return [
+                'success' => true,
+                'message' => sprintf(
+                    'Cita programada para %s el %s a las %s con %s (%s).',
+                    $sel['mascota']['nombre'],
+                    $sel['fecha'],
+                    $hora,
+                    $sel['veterinario']['nombre'],
+                    $sel['servicio']['nombre_servicio']
+                ),
+                'errors'  => [],
+                'id'      => $id,
+            ];
+        });
+    }
+
+    // ────────────────────────────────────────────────────────────────── //
+    //  Internos
+    // ────────────────────────────────────────────────────────────────── //
+
+    /**
+     * Valida mascota, servicio, veterinario y fecha, y devuelve las entidades.
+     *
+     * @return array{errors: array<string,string>, mascota: ?array, servicio: ?array, veterinario: ?array, fecha: ?string}
+     */
+    private function resolverSeleccion(array $d, DateTimeImmutable $ahora): array {
+        $errors = [];
+
+        // Mascota activa con propietario activo (DAT-01)
+        $mascota = null;
+        $idMascota = self::aEntero($d['id_mascota'] ?? null);
+        if ($idMascota <= 0) {
+            $errors['id_mascota'] = 'Debes seleccionar una mascota.';
+        } else {
+            $mascota = $this->mascotaRepo->findById($idMascota);
+            if (!$mascota) {
+                $errors['id_mascota'] = 'La mascota seleccionada no existe.';
+            } elseif ((int) ($mascota['activo'] ?? 1) !== 1 || (int) ($mascota['propietario_activo'] ?? 1) !== 1) {
+                $errors['id_mascota'] = 'La mascota seleccionada no está activa.';
+                $mascota = null;
+            }
+        }
+        if (isset($errors['id_mascota'])) {
+            $mascota = null;
+        }
+
+        // Servicio activo
+        $servicio = null;
+        $idServicio = self::aEntero($d['id_servicio'] ?? null);
+        if ($idServicio <= 0) {
+            $errors['id_servicio'] = 'Debes seleccionar un servicio.';
+        } else {
+            $servicio = $this->servicioRepo->findActivoById($idServicio);
+            if (!$servicio) {
+                $errors['id_servicio'] = 'El servicio seleccionado no existe o no está activo.';
+            }
+        }
+
+        // Veterinario activo
+        $veterinario = null;
+        $idVet = self::aEntero($d['id_veterinario'] ?? null);
+        if ($idVet <= 0) {
+            $errors['id_veterinario'] = 'Debes seleccionar un veterinario.';
+        } else {
+            $veterinario = $this->veterinarioRepo->findActivoById($idVet);
+            if (!$veterinario) {
+                $errors['id_veterinario'] = 'El veterinario seleccionado no existe o no está activo.';
+            }
+        }
+
+        // Fecha válida y no pasada
+        $fecha = trim((string) ($d['fecha'] ?? ''));
+        if ($fecha === '') {
+            $errors['fecha'] = 'Debes seleccionar una fecha.';
+            $fecha = null;
+        } elseif (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $fecha, $m) || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            $errors['fecha'] = 'La fecha no es válida (formato AAAA-MM-DD).';
+            $fecha = null;
+        } elseif ($fecha < $ahora->format('Y-m-d')) {
+            $errors['fecha'] = 'No se pueden agendar citas en fechas pasadas.';
+            $fecha = null;
+        }
+
+        return [
+            'errors'      => $errors,
+            'mascota'     => $mascota,
+            'servicio'    => $servicio,
+            'veterinario' => $veterinario,
+            'fecha'       => $fecha,
+        ];
+    }
+
+    /** @param array<array{0:int,1:int}> $ocupadas */
+    private function haySolape(int $ini, int $fin, array $ocupadas): bool {
+        foreach ($ocupadas as [$oIni, $oFin]) {
+            if ($ini < $oFin && $fin > $oIni) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function aMinutos(string $hora): int {
+        [$h, $m] = array_map('intval', explode(':', $hora));
+        return $h * 60 + $m;
+    }
+
+    private static function formatear(int $minutos): string {
+        return sprintf('%02d:%02d', intdiv($minutos, 60), $minutos % 60);
+    }
+
+    private static function aEntero(mixed $valor): int {
+        return is_numeric($valor) ? (int) $valor : 0;
+    }
+
+    /** @param array<string,string> $errors */
+    private static function fallo(string $mensaje, array $errors): array {
+        return ['success' => false, 'message' => $mensaje, 'errors' => $errors, 'id' => null];
+    }
+}

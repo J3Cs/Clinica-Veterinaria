@@ -24,7 +24,10 @@ Clinica-Veterinaria/
 │   ├── manuales/                 ← Matrices y casos de prueba manuales
 │   ├── test_autenticacion.php   ← Suite automatizada US-01
 │   ├── test_propietarios.php    ← Suite automatizada US-02
-│   └── test_mascotas.php        ← Suite automatizada US-03
+│   ├── test_mascotas.php        ← Suite automatizada US-03
+│   ├── test_csrf.php            ← Pruebas del middleware CSRF
+│   ├── test_citas.php           ← Suite automatizada US-04 (sin BD)
+│   └── test_citas_integracion.php ← US-04 contra MySQL real, con concurrencia
 ├── init.sql                      ← Esquema completo de la BD (9 tablas)
 ├── init_admin.php                ← Script CLI para crear el primer admin
 ├── docker-compose.yml
@@ -87,7 +90,7 @@ docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
 | I1 | US-01 | Autenticación y Control de Acceso | ✅ Completado |
 | I2 | US-02 | Gestión de Propietarios (DUI) | ✅ Completado |
 | I2 | US-03 | Gestión y Registro de Mascotas (T-023 a T-029) | ✅ Completado |
-| I2 | US-04 | Gestión de Veterinarios y Horarios | ⏳ Pendiente |
+| I3 | US-04 | Agenda de citas (T-030 a T-036) | ✅ Completado |
 | I3 | US-05 | Agenda de citas | ⏳ Pendiente |
 | I4 | US-06 | Consultas e historial médico | ⏳ Pendiente |
 | I5 | US-07 | Bajas lógicas y reportes | ⏳ Pendiente |
@@ -100,5 +103,12 @@ docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
 - **T-027 (2.5 - Pantalla):** Formulario semántico accesible y aviso de propietarios previos (`vistas/mascotas/crear.php`, `index.php`).
 - **T-028 (2.6 - Interacción):** Validación visual interactiva y diseño adaptable móvil/desktop (`js/mascotas.js`, `style.css`).
 - **T-029 (2.7 - Verificación):** Pruebas de alta, falta de propietario, FK inválida y campos requeridos (`RF03-mascotas.md`, `test_mascotas.php`).
+
+### Agenda de citas (US-04)
+
+- Ruta: `/citas/crear` (solo administrador). Los horarios se ofrecen cada 15 min según `horarios_atencion` y la duración del servicio.
+- Las pantallas de servicios, veterinarios y horarios (dependencias US-09, US-10 y US-11) aún no existen. Para probar en desarrollo, cargar `database/seeds/dev_citas_seed.sql`.
+- Bases creadas antes de US-04: aplicar `database/migrations/005_citas_indice_disponibilidad.sql`.
+- Decisiones y límites: `docs/adr/ADR-006-agendamiento-citas-concurrencia.md`.
 
 Ver `docs/CHANGELOG.md` para el detalle de cambios por incremento.
