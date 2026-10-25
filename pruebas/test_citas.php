@@ -87,7 +87,7 @@ class TestCitaModelMockUS4 extends CitaModel {
             throw new InvalidArgumentException('Estado de cita no válido');
         }
         $id = $this->autoIncrement++;
-        $this->items[$id] = $data + ['id_cita' => $id, 'estado' => $estado];
+        $this->items[$id] = $data + ['id_cita' => $id, 'estado' => $estado, 'motivo_cancelacion' => null];
         $this->items[$id]['estado'] = $estado;
         $this->items[$id]['id_cita'] = $id;
         return $id;
@@ -114,6 +114,42 @@ class TestCitaModelMockUS4 extends CitaModel {
         }
         usort($res, fn($a, $b) => strcmp((string) $a['hora_cita'], (string) $b['hora_cita']));
         return $res;
+    }
+
+    /** Gancho para simular que otra persona cambia la cita entre la lectura y el UPDATE. */
+    public ?Closure $antesDeCancelar = null;
+
+    private function conDetalle(array $c): array {
+        $srv = $this->servicios[$c['id_servicio']];
+        return $c + [
+            'mascota_nombre' => 'Rocky', 'mascota_especie' => 'Perro', 'propietario_nombre' => 'Ana',
+            'nombre_servicio' => $srv['nombre_servicio'], 'duracion_estimada_min' => $srv['duracion_estimada_min'],
+            'veterinario_nombre' => 'Dra. Laura', 'motivo_cancelacion' => $c['motivo_cancelacion'] ?? null,
+        ];
+    }
+
+    public function findDetalleById(int $id): ?array {
+        return isset($this->items[$id]) ? $this->conDetalle($this->items[$id]) : null;
+    }
+
+    public function findAllDetalle(?string $estado = null, int $limite = 200): array {
+        $res = array_filter($this->items, fn($c) => $estado === null || $c['estado'] === $estado);
+        usort($res, fn($a, $b) => [$a['fecha_cita'], $a['hora_cita'], $a['id_cita']] <=> [$b['fecha_cita'], $b['hora_cita'], $b['id_cita']]);
+        return array_map(fn($c) => $this->conDetalle($c), array_slice($res, 0, $limite));
+    }
+
+    public function cancelarSiProgramada(int $id, ?string $motivo): int {
+        TestLogUS4::$eventos[] = 'CANCEL';
+        if ($this->antesDeCancelar) {
+            ($this->antesDeCancelar)($this);
+        }
+        $c = $this->items[$id] ?? null;
+        if (!$c || $c['estado'] !== 'Programada') {
+            return 0;
+        }
+        $this->items[$id]['estado'] = 'Cancelada';
+        $this->items[$id]['motivo_cancelacion'] = $motivo;
+        return 1;
     }
 
     public function transaccion(callable $fn): mixed {
@@ -454,6 +490,156 @@ runTest('US-04: Estado — el modelo solo admite Programada, Atendida o Cancelad
     }
     assert($lanzo, 'Un estado fuera del ENUM debe rechazarse');
     assert(CitaModel::ESTADOS === ['Programada', 'Atendida', 'Cancelada'], 'Constantes de estado');
+});
+
+// ────────────────────────────────────────────────────────────────── //
+// US-05: Cancelación y listado (T-037, T-038, T-041)
+// ────────────────────────────────────────────────────────────────── //
+
+runTest('US-05: Cancelar una cita Programada — cambia a Cancelada, guarda el motivo y confirma', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    $r = $s->cancelarCita('1', "  El propietario viaja  ");
+    assert($r['success'] === true, 'Debe cancelar: ' . $r['message']);
+    assert($citas->items[1]['estado'] === 'Cancelada', 'Estado Cancelada');
+    assert($citas->items[1]['motivo_cancelacion'] === 'El propietario viaja', 'Motivo guardado sin espacios sobrantes');
+    assert(str_contains($r['message'], 'Cita cancelada') && str_contains($r['message'], 'Rocky'), 'Mensaje de confirmacion');
+    assert(str_contains($r['message'], 'horario quedó disponible'), 'Indica que el horario se libero');
+});
+
+runTest('US-05: El motivo es opcional — ausente, vacio o solo espacios se guarda como NULL', function () use ($FECHA) {
+    foreach ([null, '', '   ', "\n\t "] as $i => $motivo) {
+        [$s, $citas] = crearEscenario();
+        $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+        $r = $s->cancelarCita(1, $motivo);
+        assert($r['success'] === true, 'Debe cancelar sin motivo (caso ' . $i . ')');
+        assert($citas->items[1]['motivo_cancelacion'] === null, 'Motivo NULL (caso ' . $i . ')');
+    }
+});
+
+runTest('US-05: Motivo — se limita a 500 caracteres, se limpian controles y se rechaza lo invalido', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+
+    $r = $s->cancelarCita(1, str_repeat('a', 501));
+    assert($r['success'] === false && isset($r['errors']['motivo']), '501 caracteres: rechazado');
+    assert($citas->items[1]['estado'] === 'Programada', 'Una cancelacion rechazada no cambia la cita');
+
+    foreach (["\xC3\x28", ['x'], 12] as $malo) {   // UTF-8 invalido, arreglo, numero
+        $r = $s->cancelarCita(1, $malo);
+        assert($r['success'] === false && isset($r['errors']['motivo']), 'Motivo invalido rechazado');
+    }
+    assert($citas->items[1]['estado'] === 'Programada', 'Sigue Programada');
+
+    $r = $s->cancelarCita(1, str_repeat('á', 500) );
+    assert($r['success'] === true && mb_strlen($citas->items[1]['motivo_cancelacion']) === 500, '500 caracteres exactos (multibyte): aceptado');
+
+    [$s2, $c2] = crearEscenario();
+    $c2->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    $s2->cancelarCita(1, "Hola\x00 mundo\x07");
+    assert($c2->items[1]['motivo_cancelacion'] === 'Hola mundo', 'Caracteres de control eliminados');
+});
+
+runTest('US-05: Una cita Atendida no se puede cancelar', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00', 'Atendida');
+    TestLogUS4::$eventos = [];
+    $r = $s->cancelarCita(1, 'x');
+    assert($r['success'] === false && str_contains($r['message'], 'Atendida'), 'Rechazo que menciona el estado: ' . $r['message']);
+    assert($citas->items[1]['estado'] === 'Atendida' && $citas->items[1]['motivo_cancelacion'] === null, 'La cita no cambia');
+    assert(!in_array('CANCEL', TestLogUS4::$eventos, true), 'Ni siquiera se intenta el UPDATE');
+});
+
+runTest('US-05: Una cita Cancelada no vuelve a cancelarse ni pierde su motivo original', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    assert($s->cancelarCita(1, 'Motivo original')['success'] === true, 'Primera cancelacion');
+    $r = $s->cancelarCita(1, 'Otro motivo');
+    assert($r['success'] === false && str_contains($r['message'], 'Cancelada'), 'Segunda cancelacion rechazada');
+    assert($citas->items[1]['motivo_cancelacion'] === 'Motivo original', 'El motivo original se conserva');
+});
+
+runTest('US-05: Identificador invalido o inexistente — se rechaza sin tocar datos', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    TestLogUS4::$eventos = [];
+    foreach ([0, 'abc', '1e3', '-1', '1.5', '', null, 99, '99', ['1']] as $id) {
+        $r = $s->cancelarCita($id, 'x');
+        assert($r['success'] === false, 'Debe rechazar id ' . json_encode($id));
+    }
+    assert($citas->items[1]['estado'] === 'Programada', 'La cita existente sigue igual');
+    assert(!in_array('CANCEL', TestLogUS4::$eventos, true), 'Nunca se llego al UPDATE');
+});
+
+runTest('US-05: Liberacion del horario — tras cancelar, la franja vuelve a ofrecerse y se puede reservar', function () use ($FECHA, $AHORA) {
+    [$s, $citas] = crearEscenario();
+    assert($s->agendarCita(pedido($FECHA, '09:00'), $AHORA)['success'] === true, 'Reserva inicial');
+    assert(!in_array('09:00', franjas($s, $FECHA, $AHORA), true), 'Ocupada mientras esta Programada');
+    assert($s->agendarCita(pedido($FECHA, '09:00'), $AHORA)['success'] === false, 'No admite otra encima');
+
+    assert($s->cancelarCita(1, 'Cambio de planes')['success'] === true, 'Se cancela');
+    assert(in_array('09:00', franjas($s, $FECHA, $AHORA), true), 'La franja 09:00 vuelve a estar disponible');
+    $nueva = $s->agendarCita(pedido($FECHA, '09:00'), $AHORA);
+    assert($nueva['success'] === true, 'Se puede reservar otra cita en ese horario');
+    assert($citas->items[2]['estado'] === 'Programada', 'La nueva queda Programada');
+});
+
+runTest('US-05: Carrera — si la cita cambia entre la lectura y el UPDATE, no se pisa y se informa', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    $citas->antesDeCancelar = function (TestCitaModelMockUS4 $m) { $m->items[1]['estado'] = 'Atendida'; };
+    $r = $s->cancelarCita(1, 'x');
+    assert($r['success'] === false && str_contains($r['message'], 'ya no está Programada'), 'Debe avisar: ' . $r['message']);
+    assert($citas->items[1]['estado'] === 'Atendida' && $citas->items[1]['motivo_cancelacion'] === null, 'No se pisa el estado Atendida');
+});
+
+runTest('US-05: Listado — por defecto solo Programadas; filtros por estado; valor desconocido = Programada', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '10:00:00');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00', 'Atendida');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '11:00:00', 'Cancelada');
+
+    $def = $s->listarCitas();
+    assert($def['estado'] === 'Programada' && count($def['citas']) === 1, 'Por defecto: 1 Programada');
+    assert(count($s->listarCitas('Atendida')['citas']) === 1, 'Atendidas');
+    assert(count($s->listarCitas('Cancelada')['citas']) === 1, 'Canceladas');
+    $todas = $s->listarCitas('Todas');
+    assert($todas['estado'] === 'Todas' && count($todas['citas']) === 3, 'Todas');
+    assert(array_column($todas['citas'], 'hora_cita') === ['09:00:00', '10:00:00', '11:00:00'], 'Ordenadas por fecha y hora');
+    foreach (['xyz', '', null, ['Todas'], 5] as $raro) {
+        assert($s->listarCitas($raro)['estado'] === 'Programada', 'Filtro desconocido -> Programada');
+    }
+    $c = $todas['citas'][0];
+    assert(isset($c['mascota_nombre'], $c['nombre_servicio'], $c['veterinario_nombre'], $c['propietario_nombre']), 'Incluye nombres');
+});
+
+runTest('US-05: Listado — se limita a 200 citas e indica que hay mas', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    for ($i = 0; $i < 205; $i++) {
+        $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    }
+    $l = $s->listarCitas('Programada');
+    assert(count($l['citas']) === 200 && $l['truncado'] === true, 'Tope de 200 con aviso');
+
+    [$s2, $c2] = crearEscenario();
+    for ($i = 0; $i < 200; $i++) {
+        $c2->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    }
+    $l2 = $s2->listarCitas('Programada');
+    assert(count($l2['citas']) === 200 && $l2['truncado'] === false, 'Exactamente 200: sin aviso');
+});
+
+runTest('US-05: Pantalla de confirmacion — solo se ofrece para citas Programadas', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '10:00:00', 'Atendida');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '11:00:00', 'Cancelada');
+
+    $ok = $s->obtenerParaCancelar('1');
+    assert($ok['success'] === true && $ok['cita']['mascota_nombre'] === 'Rocky', 'Programada: se muestra');
+    foreach (['2', '3', 'abc', '99'] as $id) {
+        assert($s->obtenerParaCancelar($id)['success'] === false, "No se ofrece para $id");
+    }
 });
 
 echo "\n--------------------------------------------------------\n";

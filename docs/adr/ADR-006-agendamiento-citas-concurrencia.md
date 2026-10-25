@@ -7,6 +7,8 @@
 
 ---
 
+> **Nota (ADR-007):** el formulario descrito aquí ya no es una página aparte: vive en la pestaña `/citas`; `/citas/crear` redirige allí.
+
 ## Contexto
 
 US-04 permite al administrador agendar una cita eligiendo mascota, servicio, veterinario, fecha y horario. Los horarios salen de `horarios_atencion` y de la duración del servicio, no puede haber dos citas solapadas para el mismo veterinario, y la validación final se repite en el servidor dentro de una transacción.

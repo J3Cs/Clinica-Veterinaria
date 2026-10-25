@@ -24,6 +24,17 @@ class CitaService {
     /** Separación, en minutos, entre horas de inicio ofrecidas. */
     public const PASO_MINUTOS = 15;
 
+    /** Filtros de estado admitidos en el listado. */
+    public const FILTRO_TODAS     = 'Todas';
+    public const FILTRO_PREDETERM = 'Programada';
+    public const ESTADOS_FILTRO   = ['Programada', 'Atendida', 'Cancelada', self::FILTRO_TODAS];
+
+    /** Máximo de citas mostradas en el listado. */
+    public const LIMITE_LISTADO = 200;
+
+    /** Longitud máxima del motivo de cancelación. */
+    public const MOTIVO_MAX = 500;
+
     public function __construct(
         private ?CitaRepository $citaRepo = null,
         private ?HorarioAtencionRepository $horarioRepo = null,
@@ -222,6 +233,133 @@ class CitaService {
     }
 
     // ────────────────────────────────────────────────────────────────── //
+    //  Listado y cancelación (US-05)
+    // ────────────────────────────────────────────────────────────────── //
+
+    /**
+     * Citas para el listado. Un estado desconocido se trata como el predeterminado.
+     *
+     * @return array{estado: string, citas: array, truncado: bool, limite: int}
+     */
+    public function listarCitas(mixed $estado = null): array {
+        $estado = (is_string($estado) && in_array($estado, self::ESTADOS_FILTRO, true))
+            ? $estado
+            : self::FILTRO_PREDETERM;
+
+        $filas = $this->citaRepo->listDetalle(
+            $estado === self::FILTRO_TODAS ? null : $estado,
+            self::LIMITE_LISTADO + 1
+        );
+
+        $truncado = count($filas) > self::LIMITE_LISTADO;
+        if ($truncado) {
+            $filas = array_slice($filas, 0, self::LIMITE_LISTADO);
+        }
+
+        return ['estado' => $estado, 'citas' => $filas, 'truncado' => $truncado, 'limite' => self::LIMITE_LISTADO];
+    }
+
+    /**
+     * Cita lista para mostrar la pantalla de confirmación; falla si no se puede cancelar.
+     *
+     * @return array{success: bool, message: string, cita: ?array}
+     */
+    public function obtenerParaCancelar(mixed $id): array {
+        $idCita = self::aEntero($id);
+        if ($idCita <= 0) {
+            return ['success' => false, 'message' => 'La cita indicada no es válida.', 'cita' => null];
+        }
+
+        $cita = $this->citaRepo->findDetalleById($idCita);
+        if (!$cita) {
+            return ['success' => false, 'message' => 'La cita no existe.', 'cita' => null];
+        }
+        if ($cita['estado'] !== 'Programada') {
+            return ['success' => false, 'message' => self::mensajeNoCancelable((string) $cita['estado']), 'cita' => $cita];
+        }
+
+        return ['success' => true, 'message' => '', 'cita' => $cita];
+    }
+
+    /**
+     * Cancela una cita Programada y registra el motivo, que es opcional (T-038).
+     * La cita Cancelada deja de ocupar agenda, así que su horario vuelve a ofrecerse.
+     *
+     * @return array{success: bool, message: string, errors: array<string,string>}
+     */
+    public function cancelarCita(mixed $id, mixed $motivo = null): array {
+        $idCita = self::aEntero($id);
+        if ($idCita <= 0) {
+            return ['success' => false, 'message' => 'La cita indicada no es válida.', 'errors' => []];
+        }
+
+        $errorMotivo = null;
+        $motivoLimpio = self::normalizarMotivo($motivo, $errorMotivo);
+        if ($errorMotivo !== null) {
+            return ['success' => false, 'message' => $errorMotivo, 'errors' => ['motivo' => $errorMotivo]];
+        }
+
+        $cita = $this->citaRepo->findDetalleById($idCita);
+        if (!$cita) {
+            return ['success' => false, 'message' => 'La cita no existe.', 'errors' => []];
+        }
+        if ($cita['estado'] !== 'Programada') {
+            return ['success' => false, 'message' => self::mensajeNoCancelable((string) $cita['estado']), 'errors' => []];
+        }
+
+        // El UPDATE vuelve a exigir estado Programada: si alguien más la cambió
+        // entre la lectura y la escritura, no se afecta ninguna fila.
+        if (!$this->citaRepo->cancelarSiProgramada($idCita, $motivoLimpio)) {
+            return [
+                'success' => false,
+                'message' => 'La cita ya no está Programada; no se realizaron cambios.',
+                'errors'  => [],
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => sprintf(
+                'Cita cancelada: %s, %s a las %s con %s. El horario quedó disponible.',
+                $cita['mascota_nombre'],
+                date('d/m/Y', (int) strtotime((string) $cita['fecha_cita'])),
+                substr((string) $cita['hora_cita'], 0, 5),
+                $cita['veterinario_nombre']
+            ),
+            'errors'  => [],
+        ];
+    }
+
+    private static function mensajeNoCancelable(string $estado): string {
+        return sprintf('Solo se pueden cancelar citas Programadas (esta cita está %s).', $estado);
+    }
+
+    /**
+     * Motivo opcional: sin espacios en los extremos, sin caracteres de control,
+     * vacío = null. $error recibe el mensaje si no es válido.
+     */
+    private static function normalizarMotivo(mixed $motivo, ?string &$error): ?string {
+        if ($motivo === null) {
+            return null;
+        }
+        if (!is_string($motivo) || !mb_check_encoding($motivo, 'UTF-8')) {
+            $error = 'El motivo no es válido.';
+            return null;
+        }
+
+        $motivo = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $motivo) ?? '';
+        $motivo = trim($motivo);
+        if ($motivo === '') {
+            return null;
+        }
+        if (mb_strlen($motivo, 'UTF-8') > self::MOTIVO_MAX) {
+            $error = sprintf('El motivo no puede superar los %d caracteres.', self::MOTIVO_MAX);
+            return null;
+        }
+        return $motivo;
+    }
+
+    // ────────────────────────────────────────────────────────────────── //
     //  Internos
     // ────────────────────────────────────────────────────────────────── //
 
@@ -316,8 +454,12 @@ class CitaService {
         return sprintf('%02d:%02d', intdiv($minutos, 60), $minutos % 60);
     }
 
+    /** Entero estricto: solo enteros o cadenas de dígitos; cualquier otra cosa es 0. */
     private static function aEntero(mixed $valor): int {
-        return is_numeric($valor) ? (int) $valor : 0;
+        if (is_int($valor)) {
+            return $valor;
+        }
+        return (is_string($valor) && ctype_digit($valor)) ? (int) $valor : 0;
     }
 
     /** @param array<string,string> $errors */

@@ -85,3 +85,58 @@
 .resumen-cita dd {
     margin: 0;
 }
+
+
+/* ── Pestaña Citas: listado y cancelación (US-05) ─────────────────────── */
+
+.citas-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.citas-cabecera h1 { margin: 0; }
+
+.citas-atajos { display: flex; gap: 1rem; font-size: .9rem; }
+
+#agendar, #listado { scroll-margin-top: 1rem; margin-bottom: 1.5rem; }
+
+.filtro-estado {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.filtro-estado .form-control { width: auto; }
+
+.estado-badge {
+    display: inline-block;
+    padding: .15rem .6rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.estado-programada { background: var(--color-info-lt);    color: var(--color-info); }
+.estado-atendida   { background: var(--color-primary-lt); color: var(--color-primary-dk); }
+.estado-cancelada  { background: var(--color-danger-lt);  color: var(--color-danger); }
+
+.motivo-cancelacion { display: inline-block; max-width: 28ch; white-space: normal; overflow-wrap: anywhere; }
+
+.btn-danger {
+    background: var(--color-danger);
+    color: var(--color-white);
+    border: 1px solid var(--color-danger);
+}
+
+.btn-danger:hover { background: #962d22; text-decoration: none; }
+
+.btn-danger:disabled { opacity: .6; cursor: not-allowed; }
+
+.card-confirmacion { max-width: 640px; margin-inline: auto; }
+
+.card-confirmacion textarea { resize: vertical; }

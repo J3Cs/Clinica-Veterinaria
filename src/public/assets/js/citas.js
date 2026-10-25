@@ -107,4 +107,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    // ── Cancelación: evitar doble envío ───────────────────────────────────── //
+    const formCancelar = document.getElementById('form-cancelar');
+    if (formCancelar) {
+        formCancelar.addEventListener('submit', () => {
+            const boton = formCancelar.querySelector('button[type="submit"]');
+            if (boton) {
+                boton.disabled = true;
+                boton.textContent = 'Cancelando…';
+            }
+        });
+    }
 });

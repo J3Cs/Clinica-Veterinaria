@@ -48,6 +48,19 @@ if (($argv[1] ?? '') === '--worker') {
     exit(0);
 }
 
+if (($argv[1] ?? '') === '--worker-cancelar') {
+    $datos  = json_decode(base64_decode($argv[2]), true);
+    $inicio = (float) $argv[3];
+
+    Database::getConnection();
+    $service = new CitaService();
+    while (microtime(true) < $inicio) {
+        usleep(200);
+    }
+    echo json_encode($service->cancelarCita($datos['id'], $datos['motivo']));
+    exit(0);
+}
+
 try {
     $pdo = Database::getConnection();
 } catch (\Throwable $e) {
@@ -208,6 +221,98 @@ try {
         assert($exitos === 1, "Debia haber 1 exito y hubo $exitos");
         assert($rechazos === $n - 1, "Debia haber " . ($n - 1) . " rechazos y hubo $rechazos");
         assert($contar($horaDisputada) === 1, 'En la base debe quedar UNA cita Programada a las ' . $horaDisputada);
+    });
+
+
+    // ── US-05: cancelación (T-037, T-038, T-041) ──────────────────────────── //
+    $estadoDe = function (int $idCita) use ($pdo): array {
+        $st = $pdo->prepare("SELECT estado, motivo_cancelacion FROM citas WHERE id_cita = ?");
+        $st->execute([$idCita]);
+        return $st->fetch(PDO::FETCH_ASSOC);
+    };
+    $idCancelar = 0;
+
+    runTest('Cancelacion real: una cita Programada pasa a Cancelada y guarda el motivo', function () use ($service, $pedido, $estadoDe, &$idCancelar) {
+        $r = $service->agendarCita($pedido('11:00'));
+        assert($r['success'] === true, 'Se crea la cita a cancelar');
+        $idCancelar = $r['id'];
+
+        $c = $service->cancelarCita((string) $idCancelar, '  Prueba de cancelacion  ');
+        assert($c['success'] === true, 'Debe cancelar: ' . $c['message']);
+        $fila = $estadoDe($idCancelar);
+        assert($fila['estado'] === 'Cancelada', 'Estado Cancelada en la base');
+        assert($fila['motivo_cancelacion'] === 'Prueba de cancelacion', 'Motivo guardado');
+    });
+
+    runTest('Cancelacion real: el UPDATE condicional no afecta una cita ya Cancelada y conserva el motivo', function () use ($service, $estadoDe, &$idCancelar) {
+        assert((new CitaModel())->cancelarSiProgramada($idCancelar, 'otro') === 0, '0 filas afectadas');
+        $c = $service->cancelarCita($idCancelar, 'otro');
+        assert($c['success'] === false, 'El servicio tambien la rechaza');
+        assert($estadoDe($idCancelar)['motivo_cancelacion'] === 'Prueba de cancelacion', 'El motivo original no cambia');
+    });
+
+    runTest('Cancelacion real: una cita Atendida no se cancela (servicio ni UPDATE condicional)', function () use ($service, $pedido, $pdo, $estadoDe) {
+        $r = $service->agendarCita($pedido('11:30'));
+        assert($r['success'] === true, 'Se crea la cita');
+        $pdo->prepare("UPDATE citas SET estado='Atendida' WHERE id_cita=?")->execute([$r['id']]);
+
+        assert($service->cancelarCita($r['id'], 'x')['success'] === false, 'El servicio la rechaza');
+        assert((new CitaModel())->cancelarSiProgramada($r['id'], 'x') === 0, 'El UPDATE condicional afecta 0 filas');
+        $fila = $estadoDe($r['id']);
+        assert($fila['estado'] === 'Atendida' && $fila['motivo_cancelacion'] === null, 'Sigue Atendida y sin motivo');
+    });
+
+    runTest('Cancelacion real: el horario liberado se puede reservar de nuevo', function () use ($service, $pedido, $contar) {
+        assert($contar('11:00') === 0, 'No hay Programada a las 11:00 (la cancelada no cuenta)');
+        $r = $service->agendarCita($pedido('11:00'));
+        assert($r['success'] === true, 'Se puede reservar el horario liberado: ' . json_encode($r['errors']));
+        assert($contar('11:00') === 1, 'Una Programada nueva');
+    });
+
+    runTest('Listado real: trae nombres de mascota, servicio y veterinario y respeta el filtro de estado', function () use ($service, $ids, &$idCancelar) {
+        $d = (new CitaModel())->findDetalleById($idCancelar);
+        assert($d !== null && $d['mascota_nombre'] !== '' && $d['nombre_servicio'] !== '' && $d['veterinario_nombre'] !== '', 'Detalle con las uniones');
+        assert($d['propietario_nombre'] !== '' && (int) $d['duracion_estimada_min'] === 30, 'Propietario y duracion');
+
+        $canceladas = array_column($service->listarCitas('Cancelada')['citas'], 'id_cita');
+        $programadas = array_column($service->listarCitas('Programada')['citas'], 'id_cita');
+        assert(in_array($idCancelar, array_map('intval', $canceladas), true), 'Aparece entre las Canceladas');
+        assert(!in_array($idCancelar, array_map('intval', $programadas), true), 'No aparece entre las Programadas');
+    });
+
+    runTest('Concurrencia: 6 procesos cancelan la misma cita a la vez -> exactamente 1 lo logra', function () use ($service, $pedido, $estadoDe) {
+        $r = $service->agendarCita($pedido('10:30'));
+        assert($r['success'] === true, 'Se crea la cita a cancelar');
+        $idCita = $r['id'];
+
+        $n = 6;
+        $inicio = microtime(true) + 1.5;
+        $procs = [];
+        for ($i = 0; $i < $n; $i++) {
+            // Motivo distinto por proceso: si el UPDATE no fuera condicional, todos "tendrian exito".
+            $payload = base64_encode(json_encode(['id' => (string) $idCita, 'motivo' => "proceso-$i"]));
+            $cmd = [PHP_BINARY, __FILE__, '--worker-cancelar', $payload, (string) $inicio];
+            $p = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            assert(is_resource($p), 'No se pudo lanzar el proceso');
+            $procs[] = [$p, $pipes];
+        }
+
+        $exitos = 0;
+        foreach ($procs as [$p, $pipes]) {
+            $out = stream_get_contents($pipes[1]);
+            $err = stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            proc_close($p);
+            $res = json_decode($out, true);
+            assert(is_array($res), 'Respuesta invalida: ' . $out . ' ' . $err);
+            if ($res['success']) { $exitos++; }
+        }
+
+        assert($exitos === 1, "Debia haber 1 cancelacion exitosa y hubo $exitos");
+        $fila = $estadoDe($idCita);
+        assert($fila['estado'] === 'Cancelada', 'Quedo Cancelada');
+        assert(str_starts_with((string) $fila['motivo_cancelacion'], 'proceso-'), 'El motivo es el del proceso ganador');
     });
 
 } finally {

@@ -65,9 +65,12 @@ $router->get('/mascotas',           MascotaController::class, 'index');
 $router->get('/mascotas/crear',     MascotaController::class, 'create');
 $router->post('/mascotas',          MascotaController::class, 'store');
 
-// Rutas de agendamiento de citas (US-04)
-$router->get('/citas/crear',        CitaController::class, 'create');
-$router->post('/citas',              CitaController::class, 'store');
+// Pestaña de citas: agendar (US-04), listar y cancelar (US-05)
+$router->get('/citas',              CitaController::class, 'index');
+$router->get('/citas/crear',        CitaController::class, 'create');   // redirige a /citas
+$router->post('/citas',             CitaController::class, 'store');
+$router->get('/citas/cancelar',     CitaController::class, 'confirmarCancelacion');
+$router->post('/citas/cancelar',    CitaController::class, 'cancelar');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();

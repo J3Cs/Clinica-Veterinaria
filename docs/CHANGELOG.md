@@ -5,6 +5,27 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-05] — 2026-10-24 — Cancelación de Citas y pestaña «Citas» (T-037 a T-041, RF05)
+
+### Added
+- **`CitaModel::cancelarSiProgramada()`** — `UPDATE` condicional (`estado = 'Programada'`); el resultado se decide por filas afectadas. También `findDetalleById()` y `findAllDetalle()` con las uniones a mascota, propietario, servicio y veterinario (T-037).
+- **`CitaRepository`** — `cancelarSiProgramada()`, `findDetalleById()` y `listDetalle()`.
+- **`CitaService`** — `cancelarCita()` (estado, motivo opcional de hasta 500 caracteres, resultado), `obtenerParaCancelar()` y `listarCitas()` con filtro por estado y tope de 200 (T-038).
+- **`CitaController`** — `index` (pestaña), `confirmarCancelacion` y `cancelar` (solo administrador, CSRF, redirige a `/citas` con mensaje); rutas `GET /citas`, `GET|POST /citas/cancelar` (T-039).
+- **`Views/citas/listar.php`** y **`confirmar_cancelacion.php`** — listado con estados, filtros y botón Cancelar solo para Programadas; confirmación con motivo opcional (T-040).
+- **`pruebas/manuales/RF05-cancelacion.md`** (20 casos) y nuevas pruebas en `test_citas.php` (29 en total) y `test_citas_integracion.php` (14, incluye 6 cancelaciones simultáneas) (T-041).
+
+### Changed
+- **Pestaña única `/citas`:** formulario de agendar arriba y listado debajo. `/citas/crear` redirige a `/citas`; `crear.php` es ahora un fragmento. El botón «Agendar Cita» del dashboard y la pestaña «Citas» apuntan a `/citas`.
+- **Menú:** la pestaña «Citas» aparece en Propietarios y Mascotas solo para administradores.
+- **`CitaService`:** los identificadores se validan de forma estricta (solo dígitos).
+- **`citas.css` / `citas.js`:** estilos de estado y botón de peligro; evita el doble envío al cancelar.
+
+### Decisions
+- Ver `docs/adr/ADR-007-cancelacion-citas-y-pestana.md`
+
+---
+
 ## [US-04] — 2026-10-23 — Agendamiento de Citas (T-030 a T-036, RF04)
 
 ### Added

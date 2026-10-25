@@ -91,7 +91,7 @@ docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
 | I2 | US-02 | Gestión de Propietarios (DUI) | ✅ Completado |
 | I2 | US-03 | Gestión y Registro de Mascotas (T-023 a T-029) | ✅ Completado |
 | I3 | US-04 | Agenda de citas (T-030 a T-036) | ✅ Completado |
-| I3 | US-05 | Agenda de citas | ⏳ Pendiente |
+| I3 | US-05 | Cancelación de citas (T-037 a T-041) | ✅ Completado |
 | I4 | US-06 | Consultas e historial médico | ⏳ Pendiente |
 | I5 | US-07 | Bajas lógicas y reportes | ⏳ Pendiente |
 
@@ -104,11 +104,11 @@ docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
 - **T-028 (2.6 - Interacción):** Validación visual interactiva y diseño adaptable móvil/desktop (`js/mascotas.js`, `style.css`).
 - **T-029 (2.7 - Verificación):** Pruebas de alta, falta de propietario, FK inválida y campos requeridos (`RF03-mascotas.md`, `test_mascotas.php`).
 
-### Agenda de citas (US-04)
+### Citas (US-04 y US-05)
 
-- Ruta: `/citas/crear` (solo administrador). Los horarios se ofrecen cada 15 min según `horarios_atencion` y la duración del servicio.
+- Pestaña **Citas** (`/citas`, solo administrador): formulario para agendar, listado por estado y cancelación con motivo opcional. Los horarios se ofrecen cada 15 min según `horarios_atencion` y la duración del servicio.
 - Las pantallas de servicios, veterinarios y horarios (dependencias US-09, US-10 y US-11) aún no existen. Para probar en desarrollo, cargar `database/seeds/dev_citas_seed.sql`.
 - Bases creadas antes de US-04: aplicar `database/migrations/005_citas_indice_disponibilidad.sql`.
-- Decisiones y límites: `docs/adr/ADR-006-agendamiento-citas-concurrencia.md`.
+- Decisiones y límites: `docs/adr/ADR-006-agendamiento-citas-concurrencia.md` y `docs/adr/ADR-007-cancelacion-citas-y-pestana.md`.
 
 Ver `docs/CHANGELOG.md` para el detalle de cambios por incremento.
