@@ -2,6 +2,7 @@
 -- Migración 002: Agregar y asegurar columna DUI única en propietarios (T-087, UNI-01, BAJA-01)
 -- ===================================================================
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 -- 1. Agregar columna dui si no existe

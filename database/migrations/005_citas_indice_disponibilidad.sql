@@ -4,6 +4,7 @@
 -- Idempotente.
 -- ===================================================================
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 SET @idx_existe := (

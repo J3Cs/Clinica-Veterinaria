@@ -9,6 +9,7 @@
 -- NO se puede iniciar sesión con ellas. Nunca ejecutar en producción.
 -- ===================================================================
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 -- Servicios
