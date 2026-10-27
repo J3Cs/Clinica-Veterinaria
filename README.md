@@ -27,9 +27,13 @@ Clinica-Veterinaria/
 │   ├── test_mascotas.php        ← Suite automatizada US-03
 │   ├── test_csrf.php            ← Pruebas del middleware CSRF
 │   ├── test_citas.php           ← Suite automatizada US-04 (sin BD)
-│   └── test_citas_integracion.php ← US-04 contra MySQL real, con concurrencia
+│   ├── test_citas_integracion.php ← US-04/US-05 contra MySQL real, con concurrencia
+│   ├── test_consultas.php       ← Suite automatizada US-06 (sin BD)
+│   ├── test_navegacion.php      ← Menú y funciones según el rol (ACC-01)
+│   └── test_consultas_integracion.php ← US-06 contra MySQL real (rollback y concurrencia)
 ├── init.sql                      ← Esquema completo de la BD (9 tablas)
 ├── init_admin.php                ← Script CLI para crear el primer admin
+├── init_veterinario.php          ← Script CLI para dar acceso a un veterinario (hasta US-09/US-11)
 ├── docker-compose.yml
 ├── Dockerfile
 └── src/
@@ -92,7 +96,7 @@ docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
 | I2 | US-03 | Gestión y Registro de Mascotas (T-023 a T-029) | ✅ Completado |
 | I3 | US-04 | Agenda de citas (T-030 a T-036) | ✅ Completado |
 | I3 | US-05 | Cancelación de citas (T-037 a T-041) | ✅ Completado |
-| I4 | US-06 | Consultas e historial médico | ⏳ Pendiente |
+| I4 | US-06 | Consultas veterinarias (T-042 a T-048) | ✅ Completado |
 | I5 | US-07 | Bajas lógicas y reportes | ⏳ Pendiente |
 
 ### Tareas del Módulo Mascotas (US-03):
@@ -110,5 +114,30 @@ docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
 - Las pantallas de servicios, veterinarios y horarios (dependencias US-09, US-10 y US-11) aún no existen. Para probar en desarrollo, cargar `database/seeds/dev_citas_seed.sql`.
 - Bases creadas antes de US-04: aplicar `database/migrations/005_citas_indice_disponibilidad.sql`.
 - Decisiones y límites: `docs/adr/ADR-006-agendamiento-citas-concurrencia.md` y `docs/adr/ADR-007-cancelacion-citas-y-pestana.md`.
+
+### Consultas veterinarias (US-06)
+
+- El veterinario entra a **Mi agenda** (`/veterinario/agenda`), elige una de sus citas Programadas y registra diagnóstico, observaciones y tratamiento. Al guardar, la cita pasa a Atendida en la misma transacción.
+- Los veterinarios del seed ya tienen usuario con acceso (ver «Usuarios y roles»). Para cambiar una contraseña o crear otro veterinario, en el equipo con acceso a la base de datos: `php init_veterinario.php`.
+- Sin migraciones nuevas. Decisiones y límites: `docs/adr/ADR-008-consultas-veterinarias-atomicidad.md`.
+
+### Usuarios y roles
+
+| Usuario | Rol | Contraseña inicial | Menú |
+|---|---|---|---|
+| el que creaste con `init_admin.php` | Administrador | la que elegiste | Dashboard · Propietarios · Mascotas · Citas |
+| `dra.demo1` (Dra. Laura Mendoza) | Veterinario | `Mendoza#2026` | Mi agenda · Mascotas · Propietarios |
+| `dr.demo2` (Dr. Carlos Rivas) | Veterinario | `Rivas#2026` | Mi agenda · Mascotas · Propietarios |
+
+Las cuentas de los veterinarios las crea `database/seeds/dev_citas_seed.sql` (también sirve volver a ejecutarlo en una base que ya lo tenía: da acceso sin pisar contraseñas ya cambiadas). **Son contraseñas conocidas, solo para desarrollo.**
+
+| Función | Administrador | Veterinario |
+|---|---|---|
+| Ver propietarios y mascotas | Sí | Sí (solo lectura) |
+| Registrar propietarios y mascotas | Sí | No |
+| Agendar, listar y cancelar citas | Sí | No |
+| Ver su agenda y registrar consultas | No | Sí |
+
+El menú se arma según el rol (`src/app/Config/Navegacion.php`); el acceso real lo exige cada controlador. El rol de recepción queda pendiente: los pasos para agregarlo están en `docs/adr/ADR-009-roles-y-menu-por-usuario.md`.
 
 Ver `docs/CHANGELOG.md` para el detalle de cambios por incremento.

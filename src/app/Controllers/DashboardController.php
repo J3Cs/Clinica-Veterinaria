@@ -1,7 +1,9 @@
 <?php
 namespace App\Controllers;
 
+use App\Config\Navegacion;
 use App\Middlewares\AuthMiddleware;
+use App\Services\ConsultaService;
 
 /**
  * DashboardController — ARQ-01, ACC-01
@@ -32,6 +34,14 @@ class DashboardController {
         $rol    = htmlspecialchars($_SESSION['rol']    ?? '', ENT_QUOTES, 'UTF-8');
         $correo = htmlspecialchars($_SESSION['correo'] ?? '', ENT_QUOTES, 'UTF-8');
 
+        // Citas Programadas de este veterinario (US-06)
+        $agenda = (new ConsultaService())->agendaDelVeterinario($_SESSION['id_usuario'] ?? 0);
+        $citas  = $agenda['citas'];
+
+        $flashError   = $_SESSION['flash_error'] ?? null;
+        $flashSuccess = $_SESSION['flash_success'] ?? null;
+        unset($_SESSION['flash_error'], $_SESSION['flash_success']);
+
         require_once __DIR__ . '/../Views/dashboard/veterinario.php';
     }
 
@@ -41,14 +51,10 @@ class DashboardController {
     public function index(): void {
         AuthMiddleware::requireLogin();
 
-        $rol = $_SESSION['rol'] ?? '';
-        if ($rol === 'administrador') {
-            header('Location: /admin/dashboard');
-            exit;
-        }
-
-        if ($rol === 'veterinario') {
-            header('Location: /veterinario/agenda');
+        $rol     = $_SESSION['rol'] ?? '';
+        $destino = Navegacion::inicio($rol);
+        if ($destino !== '/dashboard') {
+            header('Location: ' . $destino);
             exit;
         }
 

@@ -41,6 +41,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\PropietarioController;
 use App\Controllers\MascotaController;
 use App\Controllers\CitaController;
+use App\Controllers\ConsultaController;
 
 $router = new Router();
 
@@ -71,6 +72,10 @@ $router->get('/citas/crear',        CitaController::class, 'create');   // redir
 $router->post('/citas',             CitaController::class, 'store');
 $router->get('/citas/cancelar',     CitaController::class, 'confirmarCancelacion');
 $router->post('/citas/cancelar',    CitaController::class, 'cancelar');
+
+// Consultas veterinarias — solo rol Veterinario (US-06)
+$router->get('/consultas/crear',    ConsultaController::class, 'crear');
+$router->post('/consultas',         ConsultaController::class, 'store');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();

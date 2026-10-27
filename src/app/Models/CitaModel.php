@@ -123,7 +123,10 @@ class CitaModel extends BaseModel {
         'SELECT c.id_cita, c.id_mascota, c.id_veterinario, c.id_servicio,
                 c.fecha_cita, c.hora_cita, c.estado, c.motivo_cancelacion, c.fecha_creacion,
                 m.nombre AS mascota_nombre, m.especie AS mascota_especie,
-                p.nombre_completo AS propietario_nombre,
+                m.raza AS mascota_raza, m.sexo AS mascota_sexo,
+                m.fecha_nacimiento AS mascota_fecha_nacimiento,
+                m.caracteristicas_relevantes AS mascota_caracteristicas,
+                p.nombre_completo AS propietario_nombre, p.telefono AS propietario_telefono,
                 s.nombre_servicio, s.duracion_estimada_min,
                 u.nombre AS veterinario_nombre
            FROM citas c
@@ -148,15 +151,24 @@ class CitaModel extends BaseModel {
     /**
      * Listado de citas con detalle, de la más próxima a la más lejana.
      *
-     * @param string|null $estado Si es null no filtra por estado.
+     * @param string|null $estado        Si es null no filtra por estado.
+     * @param int|null    $idVeterinario Si se indica, solo las citas de ese veterinario.
      * @return array<array<string,mixed>>
      */
-    public function findAllDetalle(?string $estado = null, int $limite = 200): array {
-        $sql    = self::SELECT_DETALLE;
-        $params = [];
+    public function findAllDetalle(?string $estado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        $sql     = self::SELECT_DETALLE;
+        $params  = [];
+        $filtros = [];
         if ($estado !== null) {
-            $sql .= ' WHERE c.estado = :estado';
+            $filtros[] = 'c.estado = :estado';
             $params[':estado'] = $estado;
+        }
+        if ($idVeterinario !== null) {
+            $filtros[] = 'c.id_veterinario = :id_veterinario';
+            $params[':id_veterinario'] = $idVeterinario;
+        }
+        if ($filtros !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $filtros);
         }
         $sql .= ' ORDER BY c.fecha_cita ASC, c.hora_cita ASC, c.id_cita ASC LIMIT ' . max(1, $limite);
 
@@ -181,6 +193,41 @@ class CitaModel extends BaseModel {
         $stmt->execute([
             ':nuevo'  => self::ESTADO_CANCELADA,
             ':motivo' => $motivo,
+            ':id'     => $id,
+            ':actual' => self::ESTADO_PROGRAMADA,
+        ]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Lee la cita bloqueando su fila (SELECT ... FOR UPDATE). Solo dentro de una transacción:
+     * serializa a quien registra la consulta con quien la cancela o la atiende a la vez.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function bloquearPorId(int $id): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT id_cita, id_mascota, id_veterinario, id_servicio, fecha_cita, hora_cita, estado
+               FROM citas
+              WHERE id_cita = :id
+              FOR UPDATE'
+        );
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /**
+     * Pasa la cita a Atendida SOLO si sigue Programada (US-06).
+     *
+     * @return int Filas afectadas: 1 si cambió, 0 si no estaba Programada o no existe.
+     */
+    public function marcarAtendidaSiProgramada(int $id): int {
+        $stmt = $this->db->prepare(
+            'UPDATE citas SET estado = :nuevo WHERE id_cita = :id AND estado = :actual'
+        );
+        $stmt->execute([
+            ':nuevo'  => self::ESTADO_ATENDIDA,
             ':id'     => $id,
             ':actual' => self::ESTADO_PROGRAMADA,
         ]);

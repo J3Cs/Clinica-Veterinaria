@@ -132,8 +132,9 @@ class TestCitaModelMockUS4 extends CitaModel {
         return isset($this->items[$id]) ? $this->conDetalle($this->items[$id]) : null;
     }
 
-    public function findAllDetalle(?string $estado = null, int $limite = 200): array {
-        $res = array_filter($this->items, fn($c) => $estado === null || $c['estado'] === $estado);
+    public function findAllDetalle(?string $estado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        $res = array_filter($this->items, fn($c) => ($estado === null || $c['estado'] === $estado)
+            && ($idVeterinario === null || (int) $c['id_veterinario'] === $idVeterinario));
         usort($res, fn($a, $b) => [$a['fecha_cita'], $a['hora_cita'], $a['id_cita']] <=> [$b['fecha_cita'], $b['hora_cita'], $b['id_cita']]);
         return array_map(fn($c) => $this->conDetalle($c), array_slice($res, 0, $limite));
     }

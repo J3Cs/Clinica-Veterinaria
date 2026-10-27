@@ -30,6 +30,18 @@ class VeterinarioModel extends BaseModel {
     }
 
     /**
+     * Perfil de veterinario (activo) de un usuario autenticado.
+     *
+     * @return array<string,mixed>|null null si el usuario no tiene perfil o está inactivo.
+     */
+    public function findActivoByUsuarioId(int $idUsuario): ?array {
+        $stmt = $this->db->prepare(self::SELECT_ACTIVO . ' WHERE u.id_usuario = :id AND u.activo = 1 LIMIT 1');
+        $stmt->execute([':id' => $idUsuario]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /**
      * Bloquea la fila del veterinario (SELECT ... FOR UPDATE) para serializar
      * las reservas concurrentes sobre él. Debe llamarse dentro de una transacción.
      *

@@ -5,8 +5,15 @@
 -- US-11) aún no existen, así que no hay pantallas para crearlos. Este script
 -- inserta datos de ejemplo para poder probar el agendamiento. Es idempotente.
 --
--- Las cuentas de veterinario se crean con un hash inválido a propósito:
--- NO se puede iniciar sesión con ellas. Nunca ejecutar en producción.
+-- USUARIOS CON ACCESO (solo desarrollo). Los dos veterinarios tienen cuenta propia:
+--
+--   Dra. Laura Mendoza   usuario: dra.demo1   contraseña inicial: Mendoza#2026
+--   Dr.  Carlos Rivas    usuario: dr.demo2    contraseña inicial: Rivas#2026
+--
+-- Son contraseñas CONOCIDAS (están en este archivo): sirven para probar. NUNCA ejecutar
+-- este script en producción. Para cambiarlas: `php init_veterinario.php`.
+-- Si la base ya tenía este seed (cuentas sin acceso), al volver a ejecutarlo se les asigna
+-- la contraseña inicial SOLO si siguen sin acceso; nunca se pisa una contraseña ya cambiada.
 -- ===================================================================
 
 USE clinica_veterinaria;
@@ -22,10 +29,14 @@ SELECT * FROM (
 ) AS nuevos
 WHERE NOT EXISTS (SELECT 1 FROM servicios);
 
--- Usuarios veterinarios (sin acceso: hash no válido)
+-- Usuarios veterinarios (con acceso: ver contraseñas iniciales arriba)
 INSERT IGNORE INTO usuarios (nombre, correo, usuario, contrasena, rol, activo) VALUES
-    ('Dra. Laura Mendoza', 'laura.demo@clinica.local', 'dra.demo1', '!sin-acceso-seed', 'veterinario', 1),
-    ('Dr. Carlos Rivas',   'carlos.demo@clinica.local', 'dr.demo2', '!sin-acceso-seed', 'veterinario', 1);
+    ('Dra. Laura Mendoza', 'laura.demo@clinica.local', 'dra.demo1', '$2y$12$66tfBtFYhcu2mUmDv.NReefOAPjYkfhwngi1wfzXerxrXM6MdcQj.', 'veterinario', 1),
+    ('Dr. Carlos Rivas',   'carlos.demo@clinica.local', 'dr.demo2', '$2y$12$wJCZGYQAA/r75lnsvOEiWOziRhtNRASHUmrdSkphYuXOvmQ8q8YG2', 'veterinario', 1);
+
+-- Bases que cargaron el seed anterior (cuentas sin acceso): darles acceso, sin pisar contraseñas ya cambiadas.
+UPDATE usuarios SET contrasena = '$2y$12$66tfBtFYhcu2mUmDv.NReefOAPjYkfhwngi1wfzXerxrXM6MdcQj.' WHERE usuario = 'dra.demo1' AND rol = 'veterinario' AND contrasena = '!sin-acceso-seed';
+UPDATE usuarios SET contrasena = '$2y$12$wJCZGYQAA/r75lnsvOEiWOziRhtNRASHUmrdSkphYuXOvmQ8q8YG2' WHERE usuario = 'dr.demo2'  AND rol = 'veterinario' AND contrasena = '!sin-acceso-seed';
 
 INSERT IGNORE INTO veterinarios (id_usuario, especialidad, telefono)
 SELECT id_usuario, 'Medicina general', '2200-0001' FROM usuarios WHERE usuario = 'dra.demo1';

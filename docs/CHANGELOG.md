@@ -5,6 +5,50 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [ACC-01] — 2026-10-26 — Usuarios de los veterinarios y menú según el rol
+
+### Added
+- **Usuarios de los dos veterinarios con acceso:** `dev_citas_seed.sql` crea a `dra.demo1` y `dr.demo2` con contraseñas iniciales documentadas (solo desarrollo). Al reejecutarlo en una base con el seed anterior se les da acceso solo si siguen sin él; nunca pisa una contraseña cambiada.
+- **`App\Config\Navegacion`** — única tabla de opciones de menú, pantalla de inicio y nombre/insignia por rol.
+- **`Views/partials/navbar.php`** — menú compartido que se arma según el rol de la sesión y resalta la sección actual.
+- **`pruebas/test_navegacion.php`** (14 pruebas) y **`pruebas/manuales/ACC-roles-y-menu.md`** (13 casos).
+
+### Changed
+- Las 10 pantallas privadas usan el menú compartido en lugar de copias propias.
+- **Administrador:** Dashboard · Propietarios · Mascotas · Citas. **Veterinario:** Mi agenda · Mascotas · Propietarios.
+- `AuthController::redirectByRole` y `DashboardController::index` obtienen el inicio de `Navegacion`.
+- `style.css`: resaltado de la sección actual del menú. `init_veterinario.php`, README y guías RF06: ya no dicen que los veterinarios del seed no pueden iniciar sesión.
+
+### Fixed
+- El veterinario veía en Mascotas y Propietarios un enlace «Dashboard» a `/admin/dashboard` que le daba 403, y sus propias pantallas no enlazaban a Mascotas.
+
+### Decisions
+- Ver `docs/adr/ADR-009-roles-y-menu-por-usuario.md`
+
+---
+
+## [US-06] — 2026-10-25 — Consultas veterinarias (T-042 a T-048, RF06)
+
+### Added
+- **`ConsultaVeterinariaModel`** — inserción con sentencia preparada; exige diagnóstico y tratamiento; consultas por cita y por mascota (T-042). **`HistorialMascotaModel`** — lectura de antecedentes.
+- **`ConsultaVeterinariaRepository`** y **`HistorialMascotaRepository`** — insertar y comprobar si una cita ya tiene consulta (T-043).
+- **`ConsultaService`** (+ `ConsultaNoGuardadaException`) — guarda la consulta y pasa la cita a Atendida en una transacción con la cita bloqueada; solo el veterinario asignado y solo citas Programadas; historial consolidado sin duplicados; agenda del veterinario (T-044).
+- **`CitaModel` / `CitaRepository`** — `bloquearPorId()` (`FOR UPDATE`) y `marcarAtendidaSiProgramada()` (UPDATE condicional); el listado admite filtrar por veterinario. **`VeterinarioModel` / `VeterinarioRepository`** — `findActivoByUsuarioId()`.
+- **`ConsultaController`** y rutas `GET /consultas/crear?id_cita=N` y `POST /consultas` (solo veterinario, CSRF; ignora cualquier campo que no sea la cita y los cuatro textos) (T-045).
+- **`Views/consultas/crear.php`** — datos de la cita y de la mascota en solo lectura, formulario y historial clínico (T-046). **`public/assets/js/consultas.js`** y **`consultas.css`** — contador de caracteres y aviso de cambios sin guardar, sin bloquear el envío (T-047).
+- **`init_veterinario.php`** — script de consola para crear un veterinario con acceso o asignar contraseña a uno existente (hasta que existan US-09/US-11).
+- **`pruebas/test_consultas.php`** (19), **`pruebas/test_consultas_integracion.php`** (11, con rollback real y concurrencia) y **`pruebas/manuales/RF06-consultas.md`** (21 casos) (T-048).
+
+### Changed
+- **`/veterinario/agenda`:** de un mensaje de bienvenida a la agenda del veterinario con sus citas Programadas y el botón «Registrar consulta».
+- **`CitaModel::findDetalleById()`** devuelve más datos de la mascota y del propietario (raza, sexo, nacimiento, teléfono).
+- **Docs de US-05:** ya existe un camino real hacia el estado Atendida (registrar la consulta).
+
+### Decisions
+- Ver `docs/adr/ADR-008-consultas-veterinarias-atomicidad.md`
+
+---
+
 ## [US-05] — 2026-10-24 — Cancelación de Citas y pestaña «Citas» (T-037 a T-041, RF05)
 
 ### Added
