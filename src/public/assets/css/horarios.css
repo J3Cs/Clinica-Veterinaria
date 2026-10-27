@@ -1,0 +1,101 @@
+/**
+ * Horarios de Atención — Estilos visuales (T-075, UI-01, TEC-01)
+ */
+
+.card-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-section {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.filter-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+.filter-select {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background-color: #ffffff;
+    min-width: 240px;
+}
+
+.hora-tag {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    background-color: #e2e8f0;
+    color: #0f172a;
+    font-family: monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+/* Badges para días de la semana */
+.badge-dia {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge-dia-1 { background-color: #e0f2fe; color: #0369a1; } /* Lunes */
+.badge-dia-2 { background-color: #f0fdf4; color: #15803d; } /* Martes */
+.badge-dia-3 { background-color: #fef3c7; color: #b45309; } /* Miércoles */
+.badge-dia-4 { background-color: #ede9fe; color: #6d28d9; } /* Jueves */
+.badge-dia-5 { background-color: #fce7f3; color: #be185d; } /* Viernes */
+.badge-dia-6 { background-color: #ffedd5; color: #c2410c; } /* Sábado */
+.badge-dia-7 { background-color: #f1f5f9; color: #475569; } /* Domingo */
+
+.form-inline {
+    display: inline-block;
+    margin: 0;
+}
+
+.actions-cell {
+    white-space: nowrap;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.card-form {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}

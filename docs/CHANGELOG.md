@@ -5,6 +5,24 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-11] — 2026-10-27 — Horarios de Atención Médica (T-070 a T-075, RF11, CIT-01, BAJA-01, ACC-01, SEC-01, UI-01)
+
+### Added
+- **HorariosServicio** — Reglas de negocio de franjas horarias: validación de días (1 a 7), rangos horarios (\hora_inicio < hora_fin\), duración mínima, rechazo de franjas solapadas para el mismo veterinario y bloqueo de cambios o eliminaciones que comprometan citas programadas futuras (\CIT-01\, \BAJA-01\) (T-072).
+- **HorarioAtencionControlador** — Acciones \index\, \create\, \store\, \edit\, \update\ y \delete\ con autorización exclusiva para administrador (\AuthMiddleware::requireRole('administrador')\), protección CSRF y patrón PRG con mensajes flash (T-073).
+- **Views/horarios/listar.php** y **Views/horarios/formulario.php** — Listado interactivo con filtro por médico veterinario, visualización de días y duración de franja, y formulario de alta/edición con repoblación ante errores y empty states (T-074, UI-01).
+- **public/assets/css/horarios.css** y **public/assets/js/horarios.js** — Estilos propios y validación interactiva en JavaScript nativo con prevención de doble envío y confirmación previa (T-075, TEC-01, UI-01).
+- **pruebas/test_horarios.php** (14 pruebas automatizadas con \ssert()\ nativo al 100% de éxito) y **pruebas/manuales/RF11-horarios.md** (12 casos de prueba manuales documentados) (T-075).
+- **docs/adr/ADR-008-gestion-horarios-atencion.md** — Decisión de arquitectura sobre la gestión de franjas y protección de citas futuras.
+
+### Changed
+- **HorarioAtencionModel** — Ampliado con CRUD completo (\indAll\, \indByVeterinario\, \indById\, \indSolapadas\, \insert\, \update\, \delete\) mediante sentencias preparadas PDO preservando compatibilidad con US-04 (T-070).
+- **HorarioAtencionRepository** — Ampliado con métodos desacoplados de mantenimiento y consulta de franjas (T-071).
+- **CitaModel** — Agregado método \indProgramadasFuturasByVeterinario()\ para evaluar impacto de cambios de horario sobre citas futuras.
+- **public/index.php** — Registro de rutas \/horarios\, \/horarios/crear\, \/horarios/editar\ y \/horarios/eliminar\ (T-073).
+- **Navegación (dmin.php, vistas de horarios)** — Incorporado módulo «Horarios» en la barra de navegación y panel de administración.
+
+---
 ## [US-10] — 2026-10-27 — Catálogo de Servicios (T-065 a T-069, RF10, BAJA-01, ACC-01, SEC-01, UI-01)
 
 ### Added
