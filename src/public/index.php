@@ -41,6 +41,7 @@ use App\Controllers\DashboardController;
 use App\Controllers\PropietarioController;
 use App\Controllers\MascotaController;
 use App\Controllers\CitaController;
+use App\Controllers\ServicioController;
 
 $router = new Router();
 
@@ -71,6 +72,14 @@ $router->get('/citas/crear',        CitaController::class, 'create');   // redir
 $router->post('/citas',             CitaController::class, 'store');
 $router->get('/citas/cancelar',     CitaController::class, 'confirmarCancelacion');
 $router->post('/citas/cancelar',    CitaController::class, 'cancelar');
+
+// Rutas de gestión del catálogo de servicios (US-10)
+$router->get('/servicios',          ServicioController::class, 'index');
+$router->get('/servicios/crear',    ServicioController::class, 'create');
+$router->post('/servicios',         ServicioController::class, 'store');
+$router->get('/servicios/editar',   ServicioController::class, 'edit');
+$router->post('/servicios/editar',  ServicioController::class, 'update');
+$router->post('/servicios/estado',  ServicioController::class, 'toggleEstado');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();

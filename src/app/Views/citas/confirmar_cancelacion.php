@@ -34,6 +34,7 @@ $motivoMax = \App\Services\CitaService::MOTIVO_MAX;
         <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
         <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
         <a href="/citas" class="btn btn-sm btn-outline" aria-current="page">Citas</a>
+        <a href="/servicios" class="btn btn-sm btn-outline">Servicios</a>
         <span class="navbar-user">
             <?= $nombreUsuario ?> &middot; <span class="badge badge-admin"><?= ucfirst($rolUsuario) ?></span>
         </span>
