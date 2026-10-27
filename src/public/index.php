@@ -28,6 +28,9 @@ spl_autoload_register(function (string $class) {
 use App\Middlewares\ErrorHandlerMiddleware;
 ErrorHandlerMiddleware::register();
 
+// ── 2b. Zona horaria (las citas dependen de la hora local de la clínica) ── //
+date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'America/El_Salvador');
+
 // ── 3. Sesión ───────────────────────────────────────────────────── //
 session_start();
 
@@ -37,6 +40,9 @@ use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\PropietarioController;
 use App\Controllers\MascotaController;
+use App\Controllers\CitaController;
+use App\Controllers\ServicioController;
+use App\Controllers\HorarioAtencionControlador;
 
 $router = new Router();
 
@@ -60,6 +66,29 @@ $router->post('/propietarios',      PropietarioController::class, 'store');
 $router->get('/mascotas',           MascotaController::class, 'index');
 $router->get('/mascotas/crear',     MascotaController::class, 'create');
 $router->post('/mascotas',          MascotaController::class, 'store');
+
+// Pestaña de citas: agendar (US-04), listar y cancelar (US-05)
+$router->get('/citas',              CitaController::class, 'index');
+$router->get('/citas/crear',        CitaController::class, 'create');   // redirige a /citas
+$router->post('/citas',             CitaController::class, 'store');
+$router->get('/citas/cancelar',     CitaController::class, 'confirmarCancelacion');
+$router->post('/citas/cancelar',    CitaController::class, 'cancelar');
+
+// Rutas de gestión del catálogo de servicios (US-10)
+$router->get('/servicios',          ServicioController::class, 'index');
+$router->get('/servicios/crear',    ServicioController::class, 'create');
+$router->post('/servicios',         ServicioController::class, 'store');
+$router->get('/servicios/editar',   ServicioController::class, 'edit');
+$router->post('/servicios/editar',  ServicioController::class, 'update');
+$router->post('/servicios/estado',  ServicioController::class, 'toggleEstado');
+
+// Rutas de gestión de horarios de atención (US-11)
+$router->get('/horarios',          HorarioAtencionControlador::class, 'index');
+$router->get('/horarios/crear',    HorarioAtencionControlador::class, 'create');
+$router->post('/horarios',         HorarioAtencionControlador::class, 'store');
+$router->get('/horarios/editar',   HorarioAtencionControlador::class, 'edit');
+$router->post('/horarios/editar',  HorarioAtencionControlador::class, 'update');
+$router->post('/horarios/eliminar', HorarioAtencionControlador::class, 'delete');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();

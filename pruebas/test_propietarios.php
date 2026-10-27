@@ -229,7 +229,7 @@ runTest('T-018: Registro exitoso completo con normalizacion automatica de 9 digi
 });
 
 echo "\n--------------------------------------------------------\n";
-echo sprintf(" Resumen: %d de %d pruebas superadas (100%%).\n", $passedTests, $totalTests);
+echo sprintf(" Resumen: %d de %d pruebas superadas (%d%%).\n", $passedTests, $totalTests, $totalTests > 0 ? (int) round($passedTests / $totalTests * 100) : 0);
 echo "========================================================\n";
 
 if ($passedTests === $totalTests) {

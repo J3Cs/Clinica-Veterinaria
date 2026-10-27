@@ -5,6 +5,96 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-11] — 2026-10-27 — Horarios de Atención Médica (T-070 a T-075, RF11, CIT-01, BAJA-01, ACC-01, SEC-01, UI-01)
+
+### Added
+- **HorariosServicio** — Reglas de negocio de franjas horarias: validación de días (1 a 7), rangos horarios (\hora_inicio < hora_fin\), duración mínima, rechazo de franjas solapadas para el mismo veterinario y bloqueo de cambios o eliminaciones que comprometan citas programadas futuras (\CIT-01\, \BAJA-01\) (T-072).
+- **HorarioAtencionControlador** — Acciones \index\, \create\, \store\, \edit\, \update\ y \delete\ con autorización exclusiva para administrador (\AuthMiddleware::requireRole('administrador')\), protección CSRF y patrón PRG con mensajes flash (T-073).
+- **Views/horarios/listar.php** y **Views/horarios/formulario.php** — Listado interactivo con filtro por médico veterinario, visualización de días y duración de franja, y formulario de alta/edición con repoblación ante errores y empty states (T-074, UI-01).
+- **public/assets/css/horarios.css** y **public/assets/js/horarios.js** — Estilos propios y validación interactiva en JavaScript nativo con prevención de doble envío y confirmación previa (T-075, TEC-01, UI-01).
+- **pruebas/test_horarios.php** (14 pruebas automatizadas con \ssert()\ nativo al 100% de éxito) y **pruebas/manuales/RF11-horarios.md** (12 casos de prueba manuales documentados) (T-075).
+- **docs/adr/ADR-008-gestion-horarios-atencion.md** — Decisión de arquitectura sobre la gestión de franjas y protección de citas futuras.
+
+### Changed
+- **HorarioAtencionModel** — Ampliado con CRUD completo (\indAll\, \indByVeterinario\, \indById\, \indSolapadas\, \insert\, \update\, \delete\) mediante sentencias preparadas PDO preservando compatibilidad con US-04 (T-070).
+- **HorarioAtencionRepository** — Ampliado con métodos desacoplados de mantenimiento y consulta de franjas (T-071).
+- **CitaModel** — Agregado método \indProgramadasFuturasByVeterinario()\ para evaluar impacto de cambios de horario sobre citas futuras.
+- **public/index.php** — Registro de rutas \/horarios\, \/horarios/crear\, \/horarios/editar\ y \/horarios/eliminar\ (T-073).
+- **Navegación (dmin.php, vistas de horarios)** — Incorporado módulo «Horarios» en la barra de navegación y panel de administración.
+
+---
+## [US-10] — 2026-10-27 — Catálogo de Servicios (T-065 a T-069, RF10, BAJA-01, ACC-01, SEC-01, UI-01)
+
+### Added
+- **`CatalogoServiciosService`** — Reglas de negocio del catálogo de servicios: validación de nombre único (3–100 caracteres, case-insensitive), descripción opcional (máx. 500 caracteres), duración estimada obligatoria como entero positivo (`>= 1` min), desactivación lógica (`BAJA-01`) y reactivación sin pérdida de citas históricas (T-067).
+- **`ServicioController`** — Acciones `index`, `create`, `store`, `edit`, `update` y `toggleEstado` restringidas exclusivamente al rol `administrador` (`AuthMiddleware::requireRole('administrador')`), con protección CSRF y patrón PRG con mensajes flash (T-068).
+- **`Views/servicios/listar.php`** y **`Views/servicios/formulario.php`** — Listado administrativo con estado activo/inactivo, duración estimada y acciones de edición y cambio de estado; formulario reutilizable para alta y edición con persistencia de datos ante errores (T-069).
+- **`public/assets/css/servicios.css`** y **`public/assets/js/servicios.js`** — Estilos propios y validación progresiva en cliente en JavaScript nativo con confirmación antes de desactivar/activar y prevención de doble envío (T-069, TEC-01, UI-01).
+- **`pruebas/test_servicios.php`** (12 pruebas automatizadas con `assert()` nativo) y **`pruebas/manuales/RF10-servicios.md`** (12 casos de prueba manuales documentados) (T-069).
+
+### Changed
+- **`ServicioModel`** — Ampliado con CRUD completo mediante sentencias preparadas PDO: `findAll($soloActivos)`, `findById()`, `findByNombre()`, `tieneCitasAsociadas()`, `insert()`, `update()`, `desactivar()` y `activar()`, manteniendo compatibilidad con `findAllActivos()` y `findActivoById()` de US-04 (T-065).
+- **`ServicioRepository`** — Ampliado con `listAll()`, `findById()`, `findByNombre()`, `tieneCitasAsociadas()`, `create()`, `update()`, `desactivar()` y `activar()` (T-066).
+- **`public/index.php`** — Registro de rutas `/servicios`, `/servicios/crear`, `/servicios/editar` y `/servicios/estado` (T-068).
+- **Navegación (`admin.php`, `propietarios`, `mascotas`, `citas`)** — Incorporado enlace «Servicios» en la barra de navegación y accesos rápidos en el panel de administración.
+
+---
+
+## [US-05] — 2026-10-24 — Cancelación de Citas y pestaña «Citas» (T-037 a T-041, RF05)
+
+### Added
+- **`CitaModel::cancelarSiProgramada()`** — `UPDATE` condicional (`estado = 'Programada'`); el resultado se decide por filas afectadas. También `findDetalleById()` y `findAllDetalle()` con las uniones a mascota, propietario, servicio y veterinario (T-037).
+- **`CitaRepository`** — `cancelarSiProgramada()`, `findDetalleById()` y `listDetalle()`.
+- **`CitaService`** — `cancelarCita()` (estado, motivo opcional de hasta 500 caracteres, resultado), `obtenerParaCancelar()` y `listarCitas()` con filtro por estado y tope de 200 (T-038).
+- **`CitaController`** — `index` (pestaña), `confirmarCancelacion` y `cancelar` (solo administrador, CSRF, redirige a `/citas` con mensaje); rutas `GET /citas`, `GET|POST /citas/cancelar` (T-039).
+- **`Views/citas/listar.php`** y **`confirmar_cancelacion.php`** — listado con estados, filtros y botón Cancelar solo para Programadas; confirmación con motivo opcional (T-040).
+- **`pruebas/manuales/RF05-cancelacion.md`** (20 casos) y nuevas pruebas en `test_citas.php` (29 en total) y `test_citas_integracion.php` (14, incluye 6 cancelaciones simultáneas) (T-041).
+
+### Changed
+- **Pestaña única `/citas`:** formulario de agendar arriba y listado debajo. `/citas/crear` redirige a `/citas`; `crear.php` es ahora un fragmento. El botón «Agendar Cita» del dashboard y la pestaña «Citas» apuntan a `/citas`.
+- **Menú:** la pestaña «Citas» aparece en Propietarios y Mascotas solo para administradores.
+- **`CitaService`:** los identificadores se validan de forma estricta (solo dígitos).
+- **`citas.css` / `citas.js`:** estilos de estado y botón de peligro; evita el doble envío al cancelar.
+
+### Decisions
+- Ver `docs/adr/ADR-007-cancelacion-citas-y-pestana.md`
+
+---
+
+## [US-04] — 2026-10-23 — Agendamiento de Citas (T-030 a T-036, RF04)
+
+### Added
+- **`CitaModel`** (estados Programada/Atendida/Cancelada, citas por veterinario/fecha/estado, transacción), **`ServicioModel`**, **`HorarioAtencionModel`**, **`VeterinarioModel`** (T-030).
+- **`CitaRepository`**, **`HorarioAtencionRepository`**, **`ServicioRepository`**, **`VeterinarioRepository`** — ocupación (excluye canceladas) y disponibilidad con parámetros preparados (T-031).
+- **`CitaService`** — cálculo de franjas, rechazo de horas fuera de horario, solapadas o pasadas, y revalidación en transacción con bloqueo del veterinario (T-032).
+- **`CitaController`** — `GET /citas/crear` y `POST /citas`, solo administrador, solo campos esperados, CSRF (T-033).
+- **`Views/citas/crear.php`** — formulario con horarios disponibles, mensajes sin cupo y estados vacíos (T-034).
+- **`public/assets/js/citas.js`** y **`citas.css`** — validación previa y resumen de confirmación con JS nativo; el flujo funciona sin JS (T-035).
+- **`pruebas/test_citas.php`** (18), **`pruebas/test_citas_integracion.php`** (8, contra MySQL, con 8 procesos concurrentes) y **`pruebas/manuales/RF04-agendamiento.md`** (21 casos) (T-036).
+- **`database/migrations/005_citas_indice_disponibilidad.sql`** y **`database/seeds/dev_citas_seed.sql`** (solo desarrollo: US-09/10/11 aún no existen).
+
+### Changed
+- **`index.php`** — rutas de citas y zona horaria `America/El_Salvador` (`APP_TIMEZONE`).
+- **`MascotaModel::findById`** expone `propietario_activo`; **`admin.php`** enlaza a Citas; **`init.sql`** incluye el índice de disponibilidad.
+
+### Decisions
+- Ver `docs/adr/ADR-006-agendamiento-citas-concurrencia.md`
+
+---
+
+## [Seguridad] — 2026-10-22 — Endurecimiento tras revisión (SEC-01, BAJA-01)
+
+### Fixed
+- **`ErrorHandlerMiddleware`** — El modo debug estaba siempre activo (`|| true`). Ahora depende de `APP_DEBUG` y el detalle se registra con `error_log`.
+- **`CsrfMiddleware`** — Se rechazan tokens vacíos (`hash_equals('', '')` era `true`).
+- **`init.sql`** — Ya no contiene `DROP TABLE` (usa `CREATE TABLE IF NOT EXISTS`). El reinicio destructivo pasa a `database/dev_reset.sql`.
+- **FK clínicas** — `ON DELETE CASCADE` cambiado a `RESTRICT` (mascotas, citas, consultas, historial, veterinarios) para respetar BAJA-01. Migración `004_fk_restrict.sql` para bases existentes.
+
+### Added
+- **`pruebas/test_csrf.php`** — Pruebas del middleware CSRF.
+
+---
+
 ## [US-03] — 2026-10-21 — Gestión y Registro de Mascotas (T-023 a T-029, RF03, DAT-01, BAJA-01, UI-01)
 
 ### Added

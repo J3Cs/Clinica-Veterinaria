@@ -1,0 +1,53 @@
+/* ===================================================================
+   Catálogo de Servicios — US-10 (T-069, UI-01, TEC-01)
+   CSS propio sin bibliotecas externas.
+   =================================================================== */
+
+.duracion-badge {
+    display: inline-block;
+    padding: .2rem .65rem;
+    border-radius: 999px;
+    background: var(--color-info-lt);
+    color: var(--color-info);
+    font-size: .82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-inactivo {
+    background: var(--color-danger-lt);
+    color: var(--color-danger);
+}
+
+.servicio-inactivo-row {
+    opacity: .75;
+    background-color: #fafafa;
+}
+
+.acciones-servicio {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.form-estado-servicio {
+    display: inline-block;
+    margin: 0;
+}
+
+.btn-danger {
+    background: var(--color-danger);
+    color: var(--color-white);
+    border: 1px solid var(--color-danger);
+}
+
+.btn-danger:hover {
+    background: #962d22;
+    text-decoration: none;
+}
+
+.btn-danger:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}
