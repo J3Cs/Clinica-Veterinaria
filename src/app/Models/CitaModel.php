@@ -195,6 +195,36 @@ class CitaModel extends BaseModel {
      * @param callable():T $fn
      * @return T
      */
+
+    /**
+     * Citas programadas de un veterinario a partir de una fecha determinada.
+     * Incluye duración del servicio para calcular solapamientos.
+     *
+     * @return array<array<string,mixed>>
+     */
+    public function findProgramadasFuturasByVeterinario(int $idVeterinario, ?string $fechaDesde = null): array {
+        $fechaDesde = $fechaDesde ?? date('Y-m-d');
+        $sql = 'SELECT c.id_cita, c.id_mascota, c.id_veterinario, c.id_servicio,
+                       c.fecha_cita, c.hora_cita, c.estado,
+                       s.duracion_estimada_min, s.nombre_servicio,
+                       m.nombre AS mascota_nombre, p.nombre_completo AS propietario_nombre
+                  FROM citas c
+            INNER JOIN servicios s    ON s.id_servicio = c.id_servicio
+            INNER JOIN mascotas m     ON m.id_mascota = c.id_mascota
+            INNER JOIN propietarios p ON p.id_propietario = m.id_propietario
+                 WHERE c.id_veterinario = :id_veterinario
+                   AND c.fecha_cita >= :fecha_desde
+                   AND c.estado = :estado
+              ORDER BY c.fecha_cita ASC, c.hora_cita ASC';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':id_veterinario' => $idVeterinario,
+            ':fecha_desde'    => $fechaDesde,
+            ':estado'         => self::ESTADO_PROGRAMADA,
+        ]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
     public function transaccion(callable $fn): mixed {
         $this->db->beginTransaction();
         try {

@@ -42,6 +42,7 @@ use App\Controllers\PropietarioController;
 use App\Controllers\MascotaController;
 use App\Controllers\CitaController;
 use App\Controllers\ServicioController;
+use App\Controllers\HorarioAtencionControlador;
 
 $router = new Router();
 
@@ -80,6 +81,14 @@ $router->post('/servicios',         ServicioController::class, 'store');
 $router->get('/servicios/editar',   ServicioController::class, 'edit');
 $router->post('/servicios/editar',  ServicioController::class, 'update');
 $router->post('/servicios/estado',  ServicioController::class, 'toggleEstado');
+
+// Rutas de gestión de horarios de atención (US-11)
+$router->get('/horarios',          HorarioAtencionControlador::class, 'index');
+$router->get('/horarios/crear',    HorarioAtencionControlador::class, 'create');
+$router->post('/horarios',         HorarioAtencionControlador::class, 'store');
+$router->get('/horarios/editar',   HorarioAtencionControlador::class, 'edit');
+$router->post('/horarios/editar',  HorarioAtencionControlador::class, 'update');
+$router->post('/horarios/eliminar', HorarioAtencionControlador::class, 'delete');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();
