@@ -26,7 +26,8 @@ class CsrfMiddleware {
      */
     public static function validateToken(string $submitted): void {
         $stored = $_SESSION[self::TOKEN_KEY] ?? '';
-        if (!hash_equals($stored, $submitted)) {
+        // Rechazar tokens vacíos: hash_equals('', '') devolvería true (SEC-01)
+        if ($stored === '' || $submitted === '' || !hash_equals($stored, $submitted)) {
             http_response_code(419);
             echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Token inválido</title></head>';
             echo '<body style="font-family:sans-serif;padding:2rem"><h1>Solicitud inválida</h1>';

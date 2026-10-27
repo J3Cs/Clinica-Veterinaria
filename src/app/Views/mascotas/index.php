@@ -25,6 +25,10 @@
         <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
         <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
         <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
+        <?php if (($rolUsuario ?? '') === 'administrador'): ?>
+        <a href="/citas" class="btn btn-sm btn-outline">Citas</a>
+        <a href="/servicios" class="btn btn-sm btn-outline">Servicios</a>
+        <?php endif; ?>
         <span class="navbar-user">
             <?= $nombreUsuario ?> &middot; <span class="badge badge-<?= $rolUsuario === 'administrador' ? 'admin' : 'vet' ?>"><?= ucfirst($rolUsuario) ?></span>
         </span>

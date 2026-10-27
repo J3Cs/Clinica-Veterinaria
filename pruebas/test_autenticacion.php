@@ -238,7 +238,7 @@ runTest('T-011: Cierre de sesion seguro y limpieza de $_SESSION', function () us
 });
 
 echo "\n--------------------------------------------------------\n";
-echo sprintf(" Resumen: %d de %d pruebas superadas (100%%).\n", $passedTests, $totalTests);
+echo sprintf(" Resumen: %d de %d pruebas superadas (%d%%).\n", $passedTests, $totalTests, $totalTests > 0 ? (int) round($passedTests / $totalTests * 100) : 0);
 echo "========================================================\n";
 
 if ($passedTests === $totalTests) {

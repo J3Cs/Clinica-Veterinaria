@@ -84,7 +84,8 @@ class MascotaModel extends BaseModel {
                     m.fecha_registro,
                     p.nombre_completo AS propietario_nombre,
                     p.dui             AS propietario_dui,
-                    p.telefono        AS propietario_telefono
+                    p.telefono        AS propietario_telefono,
+                    p.activo          AS propietario_activo
                FROM mascotas m
          INNER JOIN propietarios p ON m.id_propietario = p.id_propietario
               WHERE m.id_mascota = :id
