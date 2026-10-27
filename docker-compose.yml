@@ -42,7 +42,7 @@ services:
       - ./database/migrations/005_citas_indice_disponibilidad.sql:/docker-entrypoint-initdb.d/05_migration_citas_indice.sql:ro
       # 90 · Seeds de desarrollo
       - ./database/seeds/dev_citas_seed.sql:/docker-entrypoint-initdb.d/90_seed_dev_citas.sql:ro
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password" ]
       interval: 10s

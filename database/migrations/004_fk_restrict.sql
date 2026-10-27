@@ -8,6 +8,7 @@
 -- Ejecutar UNA sola vez sobre bases creadas con el init.sql anterior.
 -- ===================================================================
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 ALTER TABLE `veterinarios` DROP FOREIGN KEY `fk_veterinarios_usuarios`;

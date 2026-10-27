@@ -2,6 +2,7 @@
 -- Migración 003: Asegurar columna activo en tabla mascotas (BAJA-01)
 -- ===================================================================
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 SET @col_activo_exists := (

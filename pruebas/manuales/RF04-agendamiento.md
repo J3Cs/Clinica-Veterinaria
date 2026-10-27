@@ -14,7 +14,7 @@ Pruebas automatizadas relacionadas:
 Las pantallas para gestionar servicios, veterinarios y horarios (US-09, US-10, US-11) todavía no existen. Para poder probar, cargar los datos de ejemplo **solo en desarrollo**:
 
 ```bash
-docker exec -i mysql_dual mysql -uroot -proot_password < database/seeds/dev_citas_seed.sql
+docker exec -i mysql_dual mysql --default-character-set=utf8mb4 -uroot -proot_password < database/seeds/dev_citas_seed.sql
 ```
 
 Si la base ya existía antes de US-04, aplicar también `database/migrations/005_citas_indice_disponibilidad.sql`.
