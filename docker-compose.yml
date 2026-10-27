@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -13,19 +11,20 @@ services:
       - ./src:/var/www/html
     environment:
       - DB_HOST=db
-      - DB_NAME=clinica_veterinaria  # Actualizado al nombre de tu base de datos
+      - DB_NAME=clinica_veterinaria
       - DB_USER=app_user
       - DB_PASS=app_password
       - APP_DEBUG=true
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
     container_name: mysql_dual
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: clinica_veterinaria # Nombre de la BD que se creará por defecto
+      MYSQL_DATABASE: clinica_veterinaria
       MYSQL_USER: app_user
       MYSQL_PASSWORD: app_password
       MYSQL_ROOT_PASSWORD: root_password
@@ -33,8 +32,23 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # <-- AQUÍ SE INICIALIZA LA BD
+      # ── Orden de inicialización (solo se ejecuta cuando el volumen está vacío) ──
+      # 01 · Esquema base
+      - ./init.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      # 02-05 · Migraciones
+      - ./database/migrations/002_propietarios_dui.sql:/docker-entrypoint-initdb.d/02_migration_propietarios_dui.sql:ro
+      - ./database/migrations/003_mascotas_activo.sql:/docker-entrypoint-initdb.d/03_migration_mascotas_activo.sql:ro
+      - ./database/migrations/004_fk_restrict.sql:/docker-entrypoint-initdb.d/04_migration_fk_restrict.sql:ro
+      - ./database/migrations/005_citas_indice_disponibilidad.sql:/docker-entrypoint-initdb.d/05_migration_citas_indice.sql:ro
+      # 90 · Seeds de desarrollo
+      - ./database/seeds/dev_citas_seed.sql:/docker-entrypoint-initdb.d/90_seed_dev_citas.sql:ro
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   mysql_data:
