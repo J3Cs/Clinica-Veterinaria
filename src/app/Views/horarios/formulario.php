@@ -39,8 +39,55 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="<?= $titulo ?> de atención médica">
     <title><?= $titulo ?> — Clínica Veterinaria</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/assets/css/horarios.css">
+    <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/horarios.css?v=<?= time() ?>">
+    <style>
+        .card-form {
+            max-width: 740px;
+            margin: 0 auto;
+        }
+        .btn-cancel-visible {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.65rem 1.25rem;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: #f8fafc;
+            color: #334155 !important;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-cancel-visible:hover {
+            background-color: #e2e8f0;
+            border-color: #94a3b8;
+            color: #0f172a !important;
+            text-decoration: none;
+        }
+        .btn-back-visible {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.95rem;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: #ffffff;
+            color: #334155 !important;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-back-visible:hover {
+            background-color: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a !important;
+            text-decoration: none;
+        }
+    </style>
 </head>
 <body class="dashboard-page">
 
@@ -68,12 +115,15 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
                 <p class="text-muted">Configure los días y el rango horario en que el médico veterinario atenderá citas clínicas.</p>
             </div>
             <div>
-                <a href="/horarios" class="btn btn-outline">&larr; Volver al listado</a>
+                <a href="/horarios" class="btn-back-visible">&larr; Volver al listado</a>
             </div>
         </div>
 
         <?php if ($flashError): ?>
-            <div class="alert alert-danger" role="alert"><?= $e($flashError) ?></div>
+            <div class="alert alert-error" role="alert">
+                <span aria-hidden="true">⚠️</span>
+                <span><?= $e($flashError) ?></span>
+            </div>
         <?php endif; ?>
 
         <?php if (empty($veterinarios) && !$modoEdicion): ?>
@@ -99,7 +149,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
                         <?php if ($modoEdicion): ?>
                             <input type="text" class="form-control" value="<?= $e($horario['veterinario_nombre'] . (!empty($horario['especialidad']) ? ' (' . $horario['especialidad'] . ')' : '')) ?>" disabled>
                             <input type="hidden" name="id_veterinario" value="<?= (int)$horario['id_veterinario'] ?>">
-                            <small class="form-text text-muted">El médico asociado no puede cambiarse en edición (elimine o cree una nueva franja si corresponde).</small>
+                            <small class="form-hint">El médico asociado no puede cambiarse en edición (elimine o cree una nueva franja si corresponde).</small>
                         <?php else: ?>
                             <select name="id_veterinario" id="id_veterinario" class="form-control <?= isset($fieldErrors['id_veterinario']) ? 'is-invalid' : '' ?>" required>
                                 <option value="">-- Seleccionar veterinario --</option>
@@ -137,7 +187,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
                         <?php if (isset($fieldErrors['hora_inicio'])): ?>
                             <div class="invalid-feedback"><?= $e($fieldErrors['hora_inicio']) ?></div>
                         <?php endif; ?>
-                        <small class="form-text text-muted">Ejemplo: 08:00 AM</small>
+                        <small class="form-hint">Ejemplo: 08:00 AM</small>
                     </div>
 
                     <!-- Hora de Fin -->
@@ -147,18 +197,18 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
                         <?php if (isset($fieldErrors['hora_fin'])): ?>
                             <div class="invalid-feedback"><?= $e($fieldErrors['hora_fin']) ?></div>
                         <?php endif; ?>
-                        <small class="form-text text-muted">Debe ser posterior a la hora de inicio.</small>
+                        <small class="form-hint">Debe ser posterior a la hora de inicio.</small>
                     </div>
 
                 </div>
 
-                <div id="client-error" class="alert alert-danger mt-1" style="display: none;" role="alert"></div>
+                <div id="client-error" class="alert alert-error mt-1" style="display: none;" role="alert"></div>
 
                 <div class="form-actions mt-2">
                     <button type="submit" class="btn btn-primary" id="btn-submit">
                         <?= $modoEdicion ? 'Actualizar Franja' : 'Guardar Franja' ?>
                     </button>
-                    <a href="/horarios" class="btn btn-outline">Cancelar</a>
+                    <a href="/horarios" class="btn-cancel-visible">Cancelar y Salir</a>
                 </div>
 
             </form>
@@ -167,6 +217,6 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
     </div>
 </main>
 
-<script src="/assets/js/horarios.js"></script>
+<script src="/assets/js/horarios.js?v=<?= time() ?>"></script>
 </body>
 </html>

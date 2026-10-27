@@ -81,13 +81,7 @@ class HorarioAtencionControlador {
 
     public function store(): void {
         AuthMiddleware::requireRole('administrador');
-
-        $token = $_POST['csrf_token'] ?? '';
-        if (!CsrfMiddleware::validateToken($token)) {
-            $_SESSION['flash_error'] = 'Token de seguridad inválido o expirado. Intente nuevamente.';
-            header('Location: /horarios/crear');
-            exit;
-        }
+        CsrfMiddleware::validateToken($_POST['csrf_token'] ?? '');
 
         $datos = [
             'id_veterinario' => $_POST['id_veterinario'] ?? null,
@@ -153,19 +147,13 @@ class HorarioAtencionControlador {
 
     public function update(): void {
         AuthMiddleware::requireRole('administrador');
+        CsrfMiddleware::validateToken($_POST['csrf_token'] ?? '');
 
-        $token = $_POST['csrf_token'] ?? '';
-        $id    = filter_var($_POST['id_horario'] ?? null, FILTER_VALIDATE_INT);
+        $id = filter_var($_POST['id_horario'] ?? null, FILTER_VALIDATE_INT);
 
         if (!$id) {
             $_SESSION['flash_error'] = 'Identificador de franja no válido.';
             header('Location: /horarios');
-            exit;
-        }
-
-        if (!CsrfMiddleware::validateToken($token)) {
-            $_SESSION['flash_error'] = 'Token de seguridad inválido o expirado. Intente nuevamente.';
-            header('Location: /horarios/editar?id=' . $id);
             exit;
         }
 
@@ -196,18 +184,12 @@ class HorarioAtencionControlador {
 
     public function delete(): void {
         AuthMiddleware::requireRole('administrador');
+        CsrfMiddleware::validateToken($_POST['csrf_token'] ?? '');
 
-        $token = $_POST['csrf_token'] ?? '';
-        $id    = filter_var($_POST['id_horario'] ?? null, FILTER_VALIDATE_INT);
+        $id = filter_var($_POST['id_horario'] ?? null, FILTER_VALIDATE_INT);
 
         if (!$id) {
             $_SESSION['flash_error'] = 'Identificador de franja no válido.';
-            header('Location: /horarios');
-            exit;
-        }
-
-        if (!CsrfMiddleware::validateToken($token)) {
-            $_SESSION['flash_error'] = 'Token de seguridad inválido o expirado. Intente nuevamente.';
             header('Location: /horarios');
             exit;
         }
