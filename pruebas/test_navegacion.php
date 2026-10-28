@@ -64,13 +64,18 @@ function hrefs(string $html): array {
 }
 
 // Rutas que SOLO puede usar el administrador (ver los requireRole de los controladores).
-const SOLO_ADMIN = ['/admin/dashboard', '/propietarios/crear', '/mascotas/crear', '/citas', '/citas/crear', '/citas/cancelar'];
+const SOLO_ADMIN = [
+    '/admin/dashboard', '/propietarios/crear', '/mascotas/crear',
+    '/citas', '/citas/crear', '/citas/cancelar',
+    '/servicios', '/servicios/crear', '/servicios/editar',
+    '/horarios', '/horarios/crear', '/horarios/editar',
+];
 
 // ────────────────────────────────────────────────────────────────── //
 
-runTest('Administrador: ve Dashboard, Propietarios, Mascotas y Citas, en ese orden', function () {
-    assert(urls('administrador') === ['/admin/dashboard', '/propietarios', '/mascotas', '/citas'], json_encode(urls('administrador')));
-    assert(array_column(Navegacion::enlaces('administrador'), 'etiqueta') === ['Dashboard', 'Propietarios', 'Mascotas', 'Citas'], 'Etiquetas');
+runTest('Administrador: ve Dashboard, Propietarios, Mascotas, Citas, Servicios y Horarios, en ese orden', function () {
+    assert(urls('administrador') === ['/admin/dashboard', '/propietarios', '/mascotas', '/citas', '/servicios', '/horarios'], json_encode(urls('administrador')));
+    assert(array_column(Navegacion::enlaces('administrador'), 'etiqueta') === ['Dashboard', 'Propietarios', 'Mascotas', 'Citas', 'Servicios', 'Horarios'], 'Etiquetas');
 });
 
 runTest('Veterinario: ve Mi agenda, Mascotas y Propietarios, en ese orden', function () {
@@ -135,9 +140,9 @@ runTest('Todas las opciones del menu y los inicios existen como rutas GET en ind
     }
 });
 
-runTest('Menu compartido, administrador: sus 4 enlaces, nombre, insignia y cerrar sesion', function () {
+runTest('Menu compartido, administrador: sus 6 enlaces, nombre, insignia y cerrar sesion', function () {
     $html = dibujarMenu(['rol' => 'administrador', 'nombre' => 'Ana Admin']);
-    assert(hrefs($html) === ['/admin/dashboard', '/propietarios', '/mascotas', '/citas', '/logout'], json_encode(hrefs($html)));
+    assert(hrefs($html) === ['/admin/dashboard', '/propietarios', '/mascotas', '/citas', '/servicios', '/horarios', '/logout'], json_encode(hrefs($html)));
     assert(str_contains($html, 'Ana Admin') && str_contains($html, 'badge-admin') && str_contains($html, 'Administrador'), 'Nombre e insignia');
 });
 
@@ -187,8 +192,9 @@ runTest('Ninguna pantalla trae su propio menu: todas usan el parcial compartido'
 
     sort($usanParcial);
     $esperadas = ['citas/confirmar_cancelacion.php', 'citas/listar.php', 'consultas/crear.php', 'dashboard/admin.php',
-                  'dashboard/index.php', 'dashboard/veterinario.php', 'mascotas/crear.php', 'mascotas/index.php',
-                  'propietarios/crear.php', 'propietarios/index.php'];
+                  'dashboard/index.php', 'dashboard/veterinario.php', 'horarios/formulario.php', 'horarios/listar.php',
+                  'mascotas/crear.php', 'mascotas/index.php', 'propietarios/crear.php', 'propietarios/index.php',
+                  'servicios/formulario.php', 'servicios/listar.php'];
     assert($usanParcial === $esperadas, 'Usan el parcial: ' . implode(', ', $usanParcial));
 });
 

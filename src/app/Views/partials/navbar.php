@@ -5,7 +5,7 @@
  * la sesión y muestra solo las opciones de ese rol (ver App\Config\Navegacion).
  *
  * @var string $navActivo  Sección actual, para resaltarla (opcional): dashboard, agenda,
- *                         propietarios, mascotas, citas.
+ *                         propietarios, mascotas, citas, servicios, horarios.
  */
 $navE      = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 $navRol    = (string) ($_SESSION['rol'] ?? '');

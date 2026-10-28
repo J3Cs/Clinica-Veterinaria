@@ -49,6 +49,8 @@ final class Navegacion {
             ['id' => 'propietarios', 'url' => '/propietarios',    'etiqueta' => 'Propietarios'],
             ['id' => 'mascotas',     'url' => '/mascotas',        'etiqueta' => 'Mascotas'],
             ['id' => 'citas',        'url' => '/citas',           'etiqueta' => 'Citas'],
+            ['id' => 'servicios',    'url' => '/servicios',       'etiqueta' => 'Servicios'],
+            ['id' => 'horarios',     'url' => '/horarios',        'etiqueta' => 'Horarios'],
         ],
         self::ROL_VETERINARIO => [
             ['id' => 'agenda',       'url' => '/veterinario/agenda', 'etiqueta' => 'Mi agenda'],
