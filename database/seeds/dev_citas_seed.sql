@@ -16,6 +16,7 @@
 -- la contraseña inicial SOLO si siguen sin acceso; nunca se pisa una contraseña ya cambiada.
 -- ===================================================================
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 -- Servicios

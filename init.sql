@@ -3,6 +3,7 @@ CREATE DATABASE IF NOT EXISTS clinica_veterinaria
 CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
 
+SET NAMES utf8mb4;
 USE clinica_veterinaria;
 
 -- NOTA: este script es idempotente y NO borra datos (CREATE TABLE IF NOT EXISTS).

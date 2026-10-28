@@ -36,6 +36,10 @@
                 <a href="/mascotas" class="btn btn-primary">Expedientes de Mascotas</a>
                 <a href="/mascotas/crear" class="btn btn-outline-dark">+ Registrar Nueva Mascota</a>
                 <a href="/citas" class="btn btn-primary">Agendar Cita</a>
+                <a href="/servicios" class="btn btn-primary">Catálogo de Servicios</a>
+                <a href="/servicios/crear" class="btn btn-outline-dark">+ Nuevo Servicio</a>
+                <a href="/horarios" class="btn btn-primary">Horarios de Atención</a>
+                <a href="/horarios/crear" class="btn btn-outline-dark">+ Asignar Horario</a>
             </div>
         </div>
     </div>

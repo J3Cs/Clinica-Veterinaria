@@ -20,7 +20,7 @@ if (php_sapi_name() !== 'cli') {
 // Autoloader
 spl_autoload_register(function (string $class) {
     $prefix  = 'App\\';
-    $baseDir = __DIR__ . '/src/app/';
+    $baseDir = __DIR__ . '/app/';
     if (strncmp($prefix, $class, strlen($prefix)) !== 0) {
         return;
     }
