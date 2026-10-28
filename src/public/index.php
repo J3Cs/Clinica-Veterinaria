@@ -45,6 +45,7 @@ use App\Controllers\CitaController;
 use App\Controllers\ConsultaController;
 use App\Controllers\ServicioController;
 use App\Controllers\HorarioAtencionController;
+use App\Controllers\HistorialController;
 
 $router = new Router();
 
@@ -70,6 +71,7 @@ $router->post('/propietarios/eliminar', PropietarioController::class, 'delete');
 
 // Rutas de gestión y mantenimiento de mascotas (US-03, US-12)
 $router->get('/mascotas',               MascotaController::class, 'index');
+$router->get('/mascotas/historial',     HistorialController::class, 'detalle');
 $router->get('/mascotas/crear',         MascotaController::class, 'create');
 $router->post('/mascotas',              MascotaController::class, 'store');
 $router->get('/mascotas/editar',        MascotaController::class, 'edit');
