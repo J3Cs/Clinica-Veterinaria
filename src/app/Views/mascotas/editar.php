@@ -273,7 +273,7 @@ $valCaracteristicas = $oldData['caracteristicas_relevantes'] ?? $mascota['caract
             <p class="text-muted">Esta mascota no tiene citas registradas.</p>
         <?php else: ?>
             <p class="table-helper-text">
-                Selecciona una cita médica para ver las acciones disponibles.
+                Selecciona una tarjeta de cita médica para ver las acciones disponibles.
             </p>
 
             <div id="selection-action-bar-citas" class="selection-action-bar" style="display: none;">
@@ -322,11 +322,11 @@ $valCaracteristicas = $oldData['caracteristicas_relevantes'] ?? $mascota['caract
                                 aria-pressed="false"
                             >
                                 <td><span class="custom-radio-indicator"></span></td>
-                                <td><span class="vet-name"><?= $e($cita['fecha_cita']) ?></span></td>
-                                <td><span class="hora-text"><?= $e($horaCita) ?></span></td>
-                                <td><span class="vet-name"><?= $e($cita['nombre_servicio'] ?? '—') ?></span></td>
-                                <td><span class="vet-spec"><?= $e($cita['veterinario_nombre'] ?? '—') ?></span></td>
-                                <td>
+                                <td data-label="Fecha"><span class="vet-name"><?= $e($cita['fecha_cita']) ?></span></td>
+                                <td data-label="Hora"><span class="hora-text"><?= $e($horaCita) ?></span></td>
+                                <td data-label="Servicio"><span class="vet-name"><?= $e($cita['nombre_servicio'] ?? '—') ?></span></td>
+                                <td data-label="Veterinario"><span class="vet-spec"><?= $e($cita['veterinario_nombre'] ?? '—') ?></span></td>
+                                <td data-label="Estado">
                                     <span class="badge <?= $estadoCita === 'Programada' ? 'badge-vet' : ($estadoCita === 'Cancelada' ? 'badge-inactivo' : 'badge-macho') ?>">
                                         <?= mb_strtoupper($e($estadoCita), 'UTF-8') ?>
                                     </span>
@@ -354,11 +354,11 @@ $valCaracteristicas = $oldData['caracteristicas_relevantes'] ?? $mascota['caract
                     </thead>
                     <tbody>
                         <?php foreach ($consultas as $con): ?>
-                            <tr class="horario-row" style="cursor: default;">
-                                <td><span class="hora-text"><?= $e($con['fecha_atencion']) ?></span></td>
-                                <td><span class="vet-name"><?= $e($con['veterinario_nombre'] ?? '—') ?></span></td>
-                                <td><?= $e($con['diagnostico']) ?></td>
-                                <td><?= $e($con['tratamiento'] ?? '—') ?></td>
+                            <tr class="horario-row readonly-card-row">
+                                <td data-label="Fecha Atención"><span class="hora-text"><?= $e($con['fecha_atencion']) ?></span></td>
+                                <td data-label="Veterinario"><span class="vet-name"><?= $e($con['veterinario_nombre'] ?? '—') ?></span></td>
+                                <td data-label="Diagnóstico"><?= $e($con['diagnostico']) ?></td>
+                                <td data-label="Tratamiento"><?= $e($con['tratamiento'] ?? '—') ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -380,11 +380,11 @@ $valCaracteristicas = $oldData['caracteristicas_relevantes'] ?? $mascota['caract
                     </thead>
                     <tbody>
                         <?php foreach ($antecedentes as $ant): ?>
-                            <tr class="horario-row" style="cursor: default;">
-                                <td><span class="vet-name"><?= $e($ant['condicion_medica']) ?></span></td>
-                                <td><?= $e($ant['descripcion_problema'] ?? '—') ?></td>
-                                <td><?= $e($ant['alergias'] ?? '—') ?></td>
-                                <td><span class="hora-text"><?= $e($ant['fecha_registro_antecedente'] ?? '—') ?></span></td>
+                            <tr class="horario-row readonly-card-row">
+                                <td data-label="Condición Médica"><span class="vet-name"><?= $e($ant['condicion_medica']) ?></span></td>
+                                <td data-label="Descripción"><?= $e($ant['descripcion_problema'] ?? '—') ?></td>
+                                <td data-label="Alergias"><?= $e($ant['alergias'] ?? '—') ?></td>
+                                <td data-label="Fecha Registro"><span class="hora-text"><?= $e($ant['fecha_registro_antecedente'] ?? '—') ?></span></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

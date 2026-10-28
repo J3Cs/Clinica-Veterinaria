@@ -112,10 +112,10 @@ $csrfToken    = $csrfToken ?? '';
         <?php else: ?>
 
             <p class="table-helper-text">
-                Selecciona cualquier servicio de la tabla para editar su información o cambiar su disponibilidad en agenda.
+                Selecciona cualquier servicio para editar su información o cambiar su disponibilidad en agenda.
             </p>
 
-            <!-- Barra de acción contextual que aparece al hacer clic en cualquier fila -->
+            <!-- Barra de acción contextual que aparece al hacer clic en cualquier tarjeta -->
             <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
                 <div class="selection-info">
                     <span class="selection-badge">Seleccionado</span>
@@ -148,9 +148,9 @@ $csrfToken    = $csrfToken ?? '';
                 <input type="hidden" name="accion" id="input-estado-accion" value="">
             </form>
 
-            <!-- Vista Tabla Centrada y Justificada (Estilo Horarios / Propietarios / Mascotas) -->
+            <!-- Vista de Tarjetas Seleccionables Responsivas -->
             <div class="table-container-center">
-                <table class="data-table-horarios" id="servicios-table">
+                <table class="data-table-horarios tabla-escritorio" id="servicios-table">
                     <thead>
                         <tr>
                             <th></th>
@@ -183,13 +183,13 @@ $csrfToken    = $csrfToken ?? '';
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
+                                <td data-label="Servicio Clínico">
                                     <div class="vet-info-centered">
                                         <span class="vet-name"><?= $e($s['nombre_servicio']) ?></span>
                                         <span class="vet-spec">Código #<?= $idServicio ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Descripción">
                                     <div class="vet-info-centered">
                                         <?php if ($desc !== ''): ?>
                                             <span class="service-desc-text" title="<?= $e($desc) ?>">
@@ -200,10 +200,10 @@ $csrfToken    = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Duración Estimada">
                                     <span class="hora-text"><?= $durMin ?> min</span>
                                 </td>
-                                <td>
+                                <td data-label="Disponibilidad">
                                     <div class="relations-group">
                                         <?php if ($activo): ?>
                                             <span class="badge-relation badge-relation-history">
@@ -216,7 +216,7 @@ $csrfToken    = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Estado">
                                     <span class="badge <?= $activo ? 'badge-vet' : 'badge-inactivo' ?>">
                                         <?= $activo ? 'ACTIVO' : 'INACTIVO' ?>
                                     </span>

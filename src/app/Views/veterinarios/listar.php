@@ -108,10 +108,10 @@ $csrfToken    = $csrfToken ?? '';
         <?php else: ?>
 
             <p class="table-helper-text">
-                Selecciona cualquier médico veterinario de la tabla para editar su ficha, consultar sus horarios o gestionar el estado de su cuenta.
+                Selecciona cualquier tarjeta de médico veterinario para editar su ficha, consultar sus horarios o gestionar el estado de su cuenta.
             </p>
 
-            <!-- Barra de acción contextual al seleccionar una fila -->
+            <!-- Barra de acción contextual al seleccionar una tarjeta -->
             <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
                 <div class="selection-info">
                     <span class="selection-badge">Seleccionado</span>
@@ -193,13 +193,13 @@ $csrfToken    = $csrfToken ?? '';
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
+                                <td data-label="Médico Veterinario">
                                     <div class="vet-info-centered">
                                         <span class="vet-name"><?= $e($v['nombre']) ?></span>
                                         <span class="vet-spec"><?= $e($v['telefono'] ?: 'Sin teléfono registrado') ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Especialidad / Licencia">
                                     <div class="vet-info-centered">
                                         <span class="vet-name" style="font-size: 0.92rem; font-weight: 600;">
                                             <?= $e($v['especialidad'] ?: 'Medicina General') ?>
@@ -209,13 +209,13 @@ $csrfToken    = $csrfToken ?? '';
                                         </span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Cuenta de Usuario">
                                     <div class="vet-info-centered">
                                         <span class="hora-text">@<?= $e($v['usuario']) ?></span>
                                         <span class="vet-spec"><?= $e($v['correo']) ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Relaciones Clínicas">
                                     <div class="relations-group">
                                         <?php if ($citasTotal > 0): ?>
                                             <span class="badge-relation badge-relation-clinical">
@@ -238,7 +238,7 @@ $csrfToken    = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Estado de Cuenta">
                                     <span class="badge <?= $activo ? 'badge-vet' : 'badge-inactivo' ?>">
                                         <?= $activo ? 'ACTIVO' : 'INACTIVO' ?>
                                     </span>

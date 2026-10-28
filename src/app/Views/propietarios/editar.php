@@ -209,7 +209,7 @@ $valDireccion = $oldData['direccion']       ?? $propietario['direccion']       ?
             <?php endif; ?>
         <?php else: ?>
             <p class="table-helper-text">
-                Selecciona cualquiera de las mascotas asociadas para abrir su expediente o editar sus datos.
+                Selecciona cualquiera de las tarjetas de mascotas asociadas para abrir su expediente o editar sus datos.
             </p>
 
             <div id="selection-action-bar-mascotas" class="selection-action-bar" style="display: none;">
@@ -255,27 +255,27 @@ $valDireccion = $oldData['direccion']       ?? $propietario['direccion']       ?
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
+                                <td data-label="Mascota">
                                     <span class="vet-name"><?= $e($m['nombre']) ?></span>
                                 </td>
-                                <td>
+                                <td data-label="Especie / Raza">
                                     <div class="vet-info-centered">
                                         <span class="hora-text"><?= $e($m['especie']) ?></span>
                                         <span class="vet-spec"><?= $e($m['raza'] ?? '—') ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Sexo">
                                     <span class="badge <?= ($m['sexo'] ?? '') === 'Macho' ? 'badge-macho' : 'badge-hembra' ?>">
                                         <?= mb_strtoupper($e($m['sexo']), 'UTF-8') ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Historial">
                                     <div class="relations-group">
                                         <span class="badge-relation badge-relation-clinical"><?= (int)($m['citas_total'] ?? 0) ?> citas</span>
                                         <span class="badge-relation badge-relation-history"><?= (int)($m['consultas_total'] ?? 0) ?> consultas</span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Estado">
                                     <span class="badge <?= $mActiva ? 'badge-vet' : 'badge-inactivo' ?>">
                                         <?= $mActiva ? 'ACTIVA' : 'INACTIVA' ?>
                                     </span>
