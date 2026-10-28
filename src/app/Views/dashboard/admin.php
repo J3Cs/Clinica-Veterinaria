@@ -35,6 +35,8 @@
                 <a href="/propietarios/crear" class="btn btn-outline-dark">+ Registrar Nuevo Propietario</a>
                 <a href="/mascotas" class="btn btn-primary">Expedientes de Mascotas</a>
                 <a href="/mascotas/crear" class="btn btn-outline-dark">+ Registrar Nueva Mascota</a>
+                <a href="/veterinarios" class="btn btn-primary">Personal Veterinario</a>
+                <a href="/veterinarios/crear" class="btn btn-outline-dark">+ Registrar Veterinario</a>
                 <a href="/citas" class="btn btn-primary">Agendar Cita</a>
                 <a href="/servicios" class="btn btn-primary">Catálogo de Servicios</a>
                 <a href="/servicios/crear" class="btn btn-outline-dark">+ Nuevo Servicio</a>
@@ -47,4 +49,3 @@
 
 </body>
 </html>
-

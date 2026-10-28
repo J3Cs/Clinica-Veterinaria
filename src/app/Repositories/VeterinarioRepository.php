@@ -5,8 +5,10 @@ use App\Models\VeterinarioModel;
 use App\Models\UsuarioModel;
 
 /**
- * VeterinarioRepository — US-04, US-12 (T-077), ARQ-01, BAJA-01
+ * VeterinarioRepository — US-04, US-09 (T-060), US-12 (T-077), ARQ-01, BAJA-01
  * Repositorio para la entidad Veterinario y su cuenta de usuario asociada.
+ * El alta de usuario y ficha se ejecuta en transacción; las consultas permiten
+ * identificar relaciones con citas, consultas y horarios.
  */
 class VeterinarioRepository {
 
@@ -33,6 +35,18 @@ class VeterinarioRepository {
         return $this->model->findAll($onlyActive);
     }
 
+    /**
+     * Busca veterinarios por nombre, usuario, correo, especialidad, teléfono o licencia (T-060).
+     *
+     * @return array<array<string,mixed>>
+     */
+    public function search(?string $termino = null, bool $onlyActive = false): array {
+        if (method_exists($this->model, 'search')) {
+            return $this->model->search($termino, $onlyActive);
+        }
+        return $this->model->findAll($onlyActive);
+    }
+
     /** @return array<string,mixed>|null */
     public function findActivoById(int $id): ?array {
         return $this->model->findActivoById($id);
@@ -44,8 +58,26 @@ class VeterinarioRepository {
     }
 
     /** @return array<string,mixed>|null */
+    public function findByUsuarioId(int $idUsuario): ?array {
+        if (method_exists($this->model, 'findByUsuarioId')) {
+            return $this->model->findByUsuarioId($idUsuario);
+        }
+        return $this->model->findActivoByUsuarioId($idUsuario);
+    }
+
+    /** @return array<string,mixed>|null */
     public function findActivoByUsuarioId(int $idUsuario): ?array {
         return $this->model->findActivoByUsuarioId($idUsuario);
+    }
+
+    /**
+     * Verifica si una licencia médica ya está registrada por otro veterinario (T-060, T-061).
+     */
+    public function isLicenciaRegistered(string $licencia, ?int $excludeIdVeterinario = null): bool {
+        if (method_exists($this->model, 'existsLicenciaMedica')) {
+            return $this->model->existsLicenciaMedica(trim($licencia), $excludeIdVeterinario);
+        }
+        return false;
     }
 
     /** Bloquea al veterinario dentro de la transacción en curso. */
@@ -54,7 +86,40 @@ class VeterinarioRepository {
     }
 
     /**
-     * Obtiene las relaciones clínicas/citas asociadas al veterinario (T-077).
+     * Crea la cuenta de usuario (`rol = 'veterinario'`) y su ficha en `veterinarios`
+     * de forma atómica dentro de una transacción PDO (T-060).
+     *
+     * @param array{nombre: string, correo: string, usuario: string, contrasena: string, rol?: string, activo?: int} $datosUsuario
+     * @param array{especialidad?: ?string, telefono?: ?string, licencia_medica?: ?string} $datosVeterinario
+     * @return array{id_veterinario: int, id_usuario: int}
+     */
+    public function createConUsuario(array $datosUsuario, array $datosVeterinario): array {
+        return $this->model->transaccion(function () use ($datosUsuario, $datosVeterinario): array {
+            $idUsuario = $this->getUsuarioModel()->insert([
+                'nombre'     => $datosUsuario['nombre'],
+                'correo'     => $datosUsuario['correo'],
+                'usuario'    => $datosUsuario['usuario'],
+                'contrasena' => $datosUsuario['contrasena'],
+                'rol'        => $datosUsuario['rol'] ?? 'veterinario',
+                'activo'     => $datosUsuario['activo'] ?? 1,
+            ]);
+
+            $idVeterinario = $this->model->insert([
+                'id_usuario'      => $idUsuario,
+                'especialidad'    => $datosVeterinario['especialidad'] ?? null,
+                'telefono'        => $datosVeterinario['telefono'] ?? null,
+                'licencia_medica' => $datosVeterinario['licencia_medica'] ?? null,
+            ]);
+
+            return [
+                'id_veterinario' => $idVeterinario,
+                'id_usuario'     => $idUsuario,
+            ];
+        });
+    }
+
+    /**
+     * Obtiene las relaciones clínicas/citas asociadas al veterinario (T-060, T-077).
      *
      * @return array{
      *     citas_total: int,
@@ -69,7 +134,7 @@ class VeterinarioRepository {
     }
 
     /**
-     * Actualiza los datos profesionales y de usuario de un veterinario (T-077).
+     * Actualiza los datos profesionales y de usuario de un veterinario en transacción (T-060, T-077).
      *
      * @param int   $idVeterinario
      * @param int   $idUsuario
@@ -77,24 +142,26 @@ class VeterinarioRepository {
      * @return bool
      */
     public function update(int $idVeterinario, int $idUsuario, array $datos): bool {
-        $okUser = $this->getUsuarioModel()->update($idUsuario, [
-            'nombre'     => $datos['nombre'],
-            'correo'     => $datos['correo'],
-            'usuario'    => $datos['usuario'],
-            'contrasena' => $datos['contrasena'] ?? null,
-        ]);
+        return $this->model->transaccion(function () use ($idVeterinario, $idUsuario, $datos): bool {
+            $okUser = $this->getUsuarioModel()->update($idUsuario, [
+                'nombre'     => $datos['nombre'],
+                'correo'     => $datos['correo'],
+                'usuario'    => $datos['usuario'],
+                'contrasena' => $datos['contrasena'] ?? null,
+            ]);
 
-        $okVet = $this->model->update($idVeterinario, [
-            'especialidad'    => $datos['especialidad'] ?? null,
-            'telefono'        => $datos['telefono'] ?? null,
-            'licencia_medica' => $datos['licencia_medica'] ?? null,
-        ]);
+            $okVet = $this->model->update($idVeterinario, [
+                'especialidad'    => $datos['especialidad'] ?? null,
+                'telefono'        => $datos['telefono'] ?? null,
+                'licencia_medica' => $datos['licencia_medica'] ?? null,
+            ]);
 
-        return $okUser && $okVet;
+            return $okUser && $okVet;
+        });
     }
 
     /**
-     * Desactiva lógicamente al veterinario a través de su cuenta de usuario (BAJA-01, T-077).
+     * Desactiva lógicamente al veterinario a través de su cuenta de usuario (BAJA-01, T-060, T-077).
      * Al quedar `usuarios.activo = 0`, el veterinario ya no puede iniciar sesión.
      */
     public function desactivar(int $idUsuario): bool {
@@ -122,13 +189,15 @@ class VeterinarioRepository {
     }
 
     /**
-     * Elimina físicamente al veterinario y su usuario cuando no existen citas ni consultas (T-077).
+     * Elimina físicamente al veterinario y su usuario en transacción cuando no existen citas ni consultas (T-060, T-077).
      */
     public function deleteFisico(int $idVeterinario, int $idUsuario): bool {
-        $okVet = $this->model->delete($idVeterinario);
-        if (!$okVet) {
-            return false;
-        }
-        return $this->getUsuarioModel()->delete($idUsuario);
+        return $this->model->transaccion(function () use ($idVeterinario, $idUsuario): bool {
+            $okVet = $this->model->delete($idVeterinario);
+            if (!$okVet) {
+                return false;
+            }
+            return $this->getUsuarioModel()->delete($idUsuario);
+        });
     }
 }

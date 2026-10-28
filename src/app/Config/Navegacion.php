@@ -48,6 +48,7 @@ final class Navegacion {
             ['id' => 'dashboard',    'url' => '/admin/dashboard', 'etiqueta' => 'Dashboard'],
             ['id' => 'propietarios', 'url' => '/propietarios',    'etiqueta' => 'Propietarios'],
             ['id' => 'mascotas',     'url' => '/mascotas',        'etiqueta' => 'Mascotas'],
+            ['id' => 'veterinarios', 'url' => '/veterinarios',    'etiqueta' => 'Veterinarios'],
             ['id' => 'citas',        'url' => '/citas',           'etiqueta' => 'Citas'],
             ['id' => 'servicios',    'url' => '/servicios',       'etiqueta' => 'Servicios'],
             ['id' => 'horarios',     'url' => '/horarios',        'etiqueta' => 'Horarios'],

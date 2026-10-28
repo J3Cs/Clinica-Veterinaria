@@ -1,7 +1,26 @@
-# Changelog — Clínica Veterinaria
+﻿# Changelog — Clínica Veterinaria
 
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 Versiones alineadas con los Incrementos del proyecto.
+
+---
+
+## [US-09] — 2026-10-28 — Gestión de Veterinarios y Usuarios (T-059 a T-064, RF09, UNI-01, DAT-01, BAJA-01, ACC-01, SEC-01, UI-01)
+
+### Added
+- **VeterinariosService::registrarVeterinario() y uscarVeterinarios()** — Alta de médico veterinario y su cuenta de usuario inicial (ol = 'veterinario'), validación de unicidad (usuario, correo, licencia_medica), cifrado de contraseña con PASSWORD_BCRYPT, cambio opcional de credenciales en edición y política de baja controlada documentada (T-061).
+- **Views/veterinarios/listar.php**, **Views/veterinarios/crear.php** y **Views/veterinarios/editar.php** — Directorio con distinción de estado activo/inactivo, buscador, filtro de estado e insignias de relaciones; formulario de creación con cuenta inicial y vista de edición donde la contraseña solo se solicita al cambiar credenciales (T-063, UI-01).
+- **public/assets/js/veterinarios.js** — Selección interactiva de filas, confirmación window.confirm antes de desactivar/eliminar/reactivar personal médico y validación progresiva en cliente complementaria al servidor (T-064).
+- **pruebas/test_veterinarios.php** (12 pruebas automatizadas con ssert() nativo e integración PDO con rollback) y **pruebas/manuales/RF09-veterinarios.md** (12 casos de prueba manuales) (T-064).
+- **docs/adr/ADR-011-gestion-veterinarios-y-usuarios.md** — Decisión de arquitectura sobre el alta transaccional 1:1 y política de baja de personal médico.
+
+### Changed
+- **VeterinarioModel y VeterinarioRepository** — Ampliados con soporte de transacciones PDO (	ransaccion(), createConUsuario()), búsqueda parametrizada (search()), verificación de licencia médica única (existsLicenciaMedica()) y consulta por id_usuario (indByUsuarioId()) (T-059, T-060).
+- **VeterinarioController** — Incorporadas acciones index, create, store, edit, update, aja y delete exclusivas del rol dministrador con protección CSRF y manejo seguro de errores de unicidad/FK sin exponer SQL (T-062).
+- **public/index.php**, **App\Config\Navegacion** y **Views/dashboard/admin.php** — Registradas rutas /veterinarios, /veterinarios/crear, /veterinarios/editar y añadido enlace «Veterinarios» en el menú del administrador (T-062).
+
+### Decisions
+- Ver docs/adr/ADR-011-gestion-veterinarios-y-usuarios.md
 
 ---
 

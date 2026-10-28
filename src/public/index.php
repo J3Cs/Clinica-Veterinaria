@@ -77,7 +77,11 @@ $router->post('/mascotas/editar',       MascotaController::class, 'update');
 $router->post('/mascotas/baja',         MascotaController::class, 'baja');
 $router->post('/mascotas/eliminar',     MascotaController::class, 'delete');
 
-// Rutas de mantenimiento y baja controlada de veterinarios (US-12)
+// Rutas de gestión, mantenimiento y baja controlada de veterinarios (US-09, US-12)
+$router->get('/veterinarios',           VeterinarioController::class, 'index');
+$router->get('/veterinarios/crear',     VeterinarioController::class, 'create');
+$router->post('/veterinarios',          VeterinarioController::class, 'store');
+$router->get('/veterinarios/editar',    VeterinarioController::class, 'edit');
 $router->post('/veterinarios/editar',   VeterinarioController::class, 'update');
 $router->post('/veterinarios/baja',     VeterinarioController::class, 'baja');
 $router->post('/veterinarios/eliminar', VeterinarioController::class, 'delete');
