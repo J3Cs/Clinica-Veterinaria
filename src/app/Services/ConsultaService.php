@@ -29,7 +29,7 @@ class ConsultaService {
     public const LIMITE_AGENDA = 200;
 
     /** Eventos mostrados en el historial consolidado de la pantalla de consulta. */
-    public const LIMITE_HISTORIAL = 10;
+    public const LIMITE_HISTORIAL = 200;
 
     /** Filtros de estado admitidos en la agenda del veterinario. */
     public const ESTADOS_AGENDA = ['Programada', 'Atendida', 'Cancelada', 'Todas'];

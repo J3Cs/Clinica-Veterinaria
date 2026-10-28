@@ -288,6 +288,7 @@ $csrfToken           = $csrfToken ?? '';
                                         <?php if (!$tieneDep): ?>
                                             <span class="badge-relation badge-relation-none">Sin registros previos</span>
                                         <?php endif; ?>
+                                        <a class="btn btn-sm btn-outline-dark" href="/mascotas/historial?id=<?= (int) $m['id_mascota'] ?>">Ver historial médico</a>
                                     </div>
                                 </td>
                                 <td data-label="Estado">
