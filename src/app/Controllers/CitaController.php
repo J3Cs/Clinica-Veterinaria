@@ -53,10 +53,32 @@ class CitaController {
         $fieldErrors = $_SESSION['field_errors'] ?? [];
         unset($_SESSION['field_errors']);
 
-        // Listado
+        // Listado y búsqueda opcional
         $listado      = $this->service->listarCitas($_GET['estado'] ?? null);
         $citas        = $listado['citas'];
         $estadoFiltro = $listado['estado'];
+        $busqueda     = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
+
+        if ($busqueda !== '') {
+            $q = mb_strtolower($busqueda, 'UTF-8');
+            $citas = array_values(array_filter(
+                $citas,
+                static function (array $c) use ($q): bool {
+                    $mascota = mb_strtolower((string) ($c['mascota_nombre'] ?? ''), 'UTF-8');
+                    $prop    = mb_strtolower((string) ($c['propietario_nombre'] ?? ''), 'UTF-8');
+                    $srv     = mb_strtolower((string) ($c['nombre_servicio'] ?? ''), 'UTF-8');
+                    $vet     = mb_strtolower((string) ($c['veterinario_nombre'] ?? ''), 'UTF-8');
+                    $fecha   = (string) ($c['fecha_cita'] ?? '');
+                    $fechaFmt = $fecha !== '' ? date('d/m/Y', (int) strtotime($fecha)) : '';
+                    return str_contains($mascota, $q)
+                        || str_contains($prop, $q)
+                        || str_contains($srv, $q)
+                        || str_contains($vet, $q)
+                        || str_contains($fecha, $q)
+                        || str_contains($fechaFmt, $q);
+                }
+            ));
+        }
 
         $nombreUsuario = htmlspecialchars($_SESSION['nombre'] ?? '', ENT_QUOTES, 'UTF-8');
         $rolUsuario    = htmlspecialchars($_SESSION['rol']    ?? '', ENT_QUOTES, 'UTF-8');

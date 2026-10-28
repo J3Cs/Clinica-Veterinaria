@@ -31,6 +31,9 @@ class ConsultaService {
     /** Eventos mostrados en el historial consolidado de la pantalla de consulta. */
     public const LIMITE_HISTORIAL = 10;
 
+    /** Filtros de estado admitidos en la agenda del veterinario. */
+    public const ESTADOS_AGENDA = ['Programada', 'Atendida', 'Cancelada', 'Todas'];
+
     public function __construct(
         private ?CitaRepository $citaRepo = null,
         private ?ConsultaVeterinariaRepository $consultaRepo = null,
@@ -48,23 +51,32 @@ class ConsultaService {
     // ────────────────────────────────────────────────────────────────── //
 
     /**
-     * Citas Programadas del veterinario autenticado, de la más próxima a la más lejana.
+     * Citas del veterinario autenticado (por defecto Programadas), de la más próxima a la más lejana.
      *
-     * @return array{veterinario: ?array, citas: array, truncado: bool}
+     * @return array{veterinario: ?array, citas: array, truncado: bool, estado?: string}
      */
-    public function agendaDelVeterinario(mixed $idUsuario): array {
+    public function agendaDelVeterinario(mixed $idUsuario, mixed $estado = 'Programada'): array {
         $vet = $this->resolverVeterinario($idUsuario);
         if ($vet === null) {
             return ['veterinario' => null, 'citas' => [], 'truncado' => false];
         }
 
-        $filas = $this->citaRepo->listDetalle('Programada', self::LIMITE_AGENDA + 1, (int) $vet['id_veterinario']);
+        $estadoFiltro = (is_string($estado) && in_array($estado, self::ESTADOS_AGENDA, true))
+            ? $estado
+            : 'Programada';
+
+        $filas = $this->citaRepo->listDetalle(
+            $estadoFiltro === 'Todas' ? null : $estadoFiltro,
+            self::LIMITE_AGENDA + 1,
+            (int) $vet['id_veterinario']
+        );
         $truncado = count($filas) > self::LIMITE_AGENDA;
 
         return [
             'veterinario' => $vet,
             'citas'       => $truncado ? array_slice($filas, 0, self::LIMITE_AGENDA) : $filas,
             'truncado'    => $truncado,
+            'estado'      => $estadoFiltro,
         ];
     }
 

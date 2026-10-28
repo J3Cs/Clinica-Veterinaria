@@ -71,6 +71,7 @@ const SOLO_ADMIN = [
     '/admin/dashboard',
     '/propietarios/crear', '/propietarios/editar',
     '/mascotas/crear', '/mascotas/editar',
+    '/veterinarios', '/veterinarios/crear', '/veterinarios/editar',
     '/citas', '/citas/crear', '/citas/cancelar',
     '/servicios', '/servicios/crear', '/servicios/editar',
     '/horarios', '/horarios/crear', '/horarios/editar',
@@ -78,9 +79,9 @@ const SOLO_ADMIN = [
 
 // ────────────────────────────────────────────────────────────────── //
 
-runTest('Administrador: ve Dashboard, Propietarios, Mascotas, Citas, Servicios y Horarios, en ese orden', function () {
-    assert(urls('administrador') === ['/admin/dashboard', '/propietarios', '/mascotas', '/citas', '/servicios', '/horarios'], json_encode(urls('administrador')));
-    assert(array_column(Navegacion::enlaces('administrador'), 'etiqueta') === ['Dashboard', 'Propietarios', 'Mascotas', 'Citas', 'Servicios', 'Horarios'], 'Etiquetas');
+runTest('Administrador: ve Dashboard, Propietarios, Mascotas, Veterinarios, Citas, Servicios y Horarios, en ese orden', function () {
+    assert(urls('administrador') === ['/admin/dashboard', '/propietarios', '/mascotas', '/veterinarios', '/citas', '/servicios', '/horarios'], json_encode(urls('administrador')));
+    assert(array_column(Navegacion::enlaces('administrador'), 'etiqueta') === ['Dashboard', 'Propietarios', 'Mascotas', 'Veterinarios', 'Citas', 'Servicios', 'Horarios'], 'Etiquetas');
 });
 
 runTest('Veterinario: ve Mi agenda, Mascotas y Propietarios, en ese orden', function () {
@@ -96,7 +97,7 @@ runTest('Veterinario: ninguna opcion del menu es exclusiva del administrador (no
 
 runTest('Administrador: el menu no ofrece las pantallas clinicas del veterinario', function () {
     foreach (urls('administrador') as $url) {
-        assert(!str_starts_with($url, '/veterinario') && !str_starts_with($url, '/consultas'), "El administrador no debe ver $url");
+        assert(!str_starts_with($url, '/veterinario/') && !str_starts_with($url, '/consultas'), "El administrador no debe ver $url");
     }
 });
 
@@ -145,9 +146,9 @@ runTest('Todas las opciones del menu y los inicios existen como rutas GET en ind
     }
 });
 
-runTest('Menu compartido, administrador: sus 6 enlaces, nombre, insignia y cerrar sesion', function () {
+runTest('Menu compartido, administrador: sus 7 enlaces, nombre, insignia y cerrar sesion', function () {
     $html = dibujarMenu(['rol' => 'administrador', 'nombre' => 'Ana Admin']);
-    assert(hrefs($html) === ['/admin/dashboard', '/propietarios', '/mascotas', '/citas', '/servicios', '/horarios', '/logout'], json_encode(hrefs($html)));
+    assert(hrefs($html) === ['/admin/dashboard', '/propietarios', '/mascotas', '/veterinarios', '/citas', '/servicios', '/horarios', '/logout'], json_encode(hrefs($html)));
     assert(str_contains($html, 'Ana Admin') && str_contains($html, 'badge-admin') && str_contains($html, 'Administrador'), 'Nombre e insignia');
 });
 
@@ -200,7 +201,8 @@ runTest('Ninguna pantalla trae su propio menu: todas usan el parcial compartido'
                   'dashboard/index.php', 'dashboard/veterinario.php', 'horarios/formulario.php', 'horarios/listar.php',
                   'mascotas/crear.php', 'mascotas/editar.php', 'mascotas/listar.php',
                   'propietarios/crear.php', 'propietarios/editar.php', 'propietarios/listar.php',
-                  'servicios/formulario.php', 'servicios/listar.php'];
+                  'servicios/formulario.php', 'servicios/listar.php',
+                  'veterinarios/crear.php', 'veterinarios/editar.php', 'veterinarios/listar.php'];
     assert($usanParcial === $esperadas, 'Usan el parcial: ' . implode(', ', $usanParcial));
 });
 
