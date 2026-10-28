@@ -4,7 +4,7 @@ namespace App\Repositories;
 use App\Models\UsuarioModel;
 
 /**
- * UsuarioRepository — T-010, ARQ-01
+ * UsuarioRepository — T-010, T-077, ARQ-01, BAJA-01
  * Capa de persistencia intermedia entre el servicio y el modelo.
  * Aplica filtros de negocio (ej. activo = 1) sin que el servicio conozca el SQL.
  */
@@ -28,6 +28,7 @@ class UsuarioRepository {
 
     /**
      * Retorna el usuario solo si existe y su estado es activo (activo = 1).
+     * Los veterinarios o usuarios desactivados no pueden iniciar sesión (T-077).
      *
      * @param string $identifier Nombre de usuario o correo electrónico.
      * @return array<string,mixed>|null
@@ -73,5 +74,57 @@ class UsuarioRepository {
      */
     public function findById(int $id): ?array {
         return $this->model->findById($id);
+    }
+
+    /**
+     * Crea un nuevo usuario.
+     *
+     * @param array{nombre: string, correo: string, usuario: string, contrasena: string, rol: string, activo?: int} $data
+     * @return int
+     */
+    public function create(array $data): int {
+        return $this->model->insert($data);
+    }
+
+    /**
+     * Actualiza un usuario existente.
+     */
+    public function update(int $id, array $data): bool {
+        return $this->model->update($id, $data);
+    }
+
+    /**
+     * Verifica duplicidad de correo.
+     */
+    public function isCorreoRegistered(string $correo, ?int $excludeId = null): bool {
+        return $this->model->existsCorreo(trim($correo), $excludeId);
+    }
+
+    /**
+     * Verifica duplicidad de nombre de usuario.
+     */
+    public function isUsuarioRegistered(string $usuario, ?int $excludeId = null): bool {
+        return $this->model->existsUsuario(trim($usuario), $excludeId);
+    }
+
+    /**
+     * Desactiva lógicamente una cuenta de usuario (BAJA-01, T-077).
+     */
+    public function desactivar(int $id): bool {
+        return $this->model->setActivo($id, 0);
+    }
+
+    /**
+     * Reactiva una cuenta de usuario.
+     */
+    public function activar(int $id): bool {
+        return $this->model->setActivo($id, 1);
+    }
+
+    /**
+     * Elimina físicamente una cuenta de usuario.
+     */
+    public function delete(int $id): bool {
+        return $this->model->delete($id);
     }
 }

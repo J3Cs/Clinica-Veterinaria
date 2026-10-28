@@ -242,6 +242,6 @@
     </div>
 </main>
 
-<script src="/js/mascotas.js"></script>
+<script src="/assets/js/mascotas.js?v=<?= time() ?>"></script>
 </body>
 </html>

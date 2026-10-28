@@ -16,7 +16,7 @@ Pruebas automatizadas relacionadas:
 
 | Usuario | Rol | Contraseña inicial | Menú esperado |
 |---|---|---|---|
-| (el que creaste con `init_admin.php`) | Administrador | la que elegiste | Dashboard · Propietarios · Mascotas · Citas |
+| (el que creaste con `init_admin.php`) | Administrador | la que elegiste | Dashboard · Propietarios · Mascotas · Citas · Servicios · Horarios |
 | `dra.demo1` (Dra. Laura Mendoza) | Veterinario | `Mendoza#2026` | Mi agenda · Mascotas · Propietarios |
 | `dr.demo2` (Dr. Carlos Rivas) | Veterinario | `Rivas#2026` | Mi agenda · Mascotas · Propietarios |
 
@@ -31,7 +31,7 @@ Son contraseñas conocidas, **solo para desarrollo**. Para cambiarlas: `php init
 | **CP-01** | Los dos veterinarios entran | 1. Iniciar sesión con `dra.demo1` / `Mendoza#2026`<br>2. Cerrar sesión<br>3. Iniciar sesión con `dr.demo2` / `Rivas#2026` | Cada uno entra y llega directo a **Mi agenda** (`/veterinario/agenda`). También funciona con el correo (`laura.demo@clinica.local`, `carlos.demo@clinica.local`). | [ ] Aprobado |
 | **CP-02** | Contraseña equivocada | 1. Probar `dra.demo1` con la contraseña del otro veterinario | No entra; mensaje de credenciales inválidas. | [ ] Aprobado |
 | **CP-03** | Cada veterinario ve su propia agenda | 1. Como administrador, agendar citas con cada veterinario<br>2. Entrar como cada uno | Cada uno ve únicamente sus citas Programadas. | [ ] Aprobado |
-| **CP-04** | Menú del administrador | 1. Entrar como administrador y recorrer Dashboard, Propietarios, Mascotas y Citas (y sus pantallas de crear) | En **todas** las pantallas el menú es el mismo: Dashboard, Propietarios, Mascotas, Citas. La sección actual aparece resaltada. | [ ] Aprobado |
+| **CP-04** | Menú del administrador | 1. Entrar como administrador y recorrer Dashboard, Propietarios, Mascotas, Citas, Servicios y Horarios (y sus pantallas de crear/editar) | En **todas** las pantallas el menú es el mismo: Dashboard, Propietarios, Mascotas, Citas, Servicios, Horarios. La sección actual aparece resaltada. | [ ] Aprobado |
 | **CP-05** | Menú del veterinario | 1. Entrar como veterinario y recorrer Mi agenda, Mascotas, Propietarios y el formulario de una consulta | En **todas** las pantallas el menú es: Mi agenda, Mascotas, Propietarios. No aparece Dashboard ni Citas. | [ ] Aprobado |
 | **CP-06** | Todo enlace del menú funciona | 1. Pulsar cada opción del menú, como administrador y como cada veterinario | Ninguna da error 403 ni pantalla en blanco. | [ ] Aprobado |
 | **CP-07** | El veterinario no ve botones de administrador | 1. Entrar como veterinario a Mascotas y a Propietarios | Ve los listados **sin** botones de "Registrar". | [ ] Aprobado |

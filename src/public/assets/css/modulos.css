@@ -1,0 +1,611 @@
+/**
+ * Estilos Modulares — Directorios, Búsqueda, Expedientes y Baja Controlada
+ * US-12 (T-079, T-080) — Cumple UI-01 y TEC-01 (CSS3 Nativo)
+ * Unificado con el diseño de tablas interactivas y barra contextual de Horarios (US-11).
+ */
+
+.card-modulo {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+/* ── Barra de Búsqueda y Filtros de Directorio ────────────────────── */
+.directory-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.directory-search-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+    flex: 1 1 520px;
+}
+
+.directory-search-input-wrap {
+    position: relative;
+    flex: 1 1 280px;
+}
+
+.directory-search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    font-size: 0.95rem;
+}
+
+.directory-search-input {
+    width: 100%;
+    padding: 0.6rem 0.95rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #ffffff;
+    color: #1e293b;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.directory-search-input:focus {
+    outline: none;
+    border-color: #2c6b4f;
+    box-shadow: 0 0 0 3px rgba(44, 107, 79, 0.15);
+}
+
+.directory-filter-select {
+    padding: 0.58rem 0.85rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #ffffff;
+    color: #1e293b;
+    cursor: pointer;
+}
+
+.directory-filter-select:focus {
+    outline: none;
+    border-color: #2c6b4f;
+    box-shadow: 0 0 0 3px rgba(44, 107, 79, 0.15);
+}
+
+.directory-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.88rem;
+    color: #475569;
+}
+
+.table-helper-text {
+    font-size: 0.9rem;
+    color: #475569;
+    margin: 0.75rem 0 1rem 0;
+    text-align: center;
+    background: #f8fafc;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+}
+
+/* ── Diseño de Tabla Estilo Horarios (Filas tipo tarjeta clickeables) ── */
+.table-container-center {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: 0.75rem 0 2rem 0;
+    overflow-x: auto;
+}
+
+.data-table-horarios {
+    width: 100%;
+    max-width: 1040px;
+    border-collapse: separate;
+    border-spacing: 0 12px;
+    margin: 0 auto;
+}
+
+.data-table-horarios thead th {
+    padding: 0.85rem 1.25rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
+    text-align: center;
+    background: transparent;
+    border-bottom: 2px solid #cbd5e1;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.horario-row,
+.selectable-row {
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.horario-row:hover,
+.selectable-row:hover {
+    background-color: #f8fafc;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.08);
+}
+
+.horario-row:focus-visible,
+.selectable-row:focus-visible {
+    outline: 2px solid #2c6b4f;
+    outline-offset: 2px;
+}
+
+.data-table-horarios tbody td {
+    padding: 1.1rem 1.25rem;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 0.94rem;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.data-table-horarios tbody td:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-left: 1px solid #e2e8f0;
+    width: 52px;
+    padding-left: 1.15rem;
+    padding-right: 0.5rem;
+}
+
+.data-table-horarios tbody td:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-right: 1px solid #e2e8f0;
+}
+
+/* Estado cuando el usuario hace clic en una fila */
+.horario-row.is-selected,
+.selectable-row.is-selected {
+    background-color: #ecfdf5 !important;
+    box-shadow: 0 4px 14px rgba(44, 107, 79, 0.16);
+}
+
+.horario-row.is-selected td,
+.selectable-row.is-selected td {
+    border-top-color: #34d399;
+    border-bottom-color: #34d399;
+}
+
+.horario-row.is-selected td:first-child,
+.selectable-row.is-selected td:first-child {
+    border-left: 5px solid #2c6b4f;
+}
+
+.horario-row.is-selected td:last-child,
+.selectable-row.is-selected td:last-child {
+    border-right-color: #34d399;
+}
+
+/* Filas inactivas (baja lógica) */
+.row-inactivo {
+    opacity: 0.76;
+    background-color: #f8fafc;
+}
+
+/* Radio / Check visual en cada fila */
+.custom-radio-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #94a3b8;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+    position: relative;
+}
+
+.horario-row:hover .custom-radio-indicator,
+.selectable-row:hover .custom-radio-indicator {
+    border-color: #2c6b4f;
+}
+
+.horario-row.is-selected .custom-radio-indicator,
+.selectable-row.is-selected .custom-radio-indicator {
+    border-color: #2c6b4f;
+    background-color: #2c6b4f;
+    box-shadow: inset 0 0 0 4px #ffffff;
+}
+
+/* Información centrada en celdas (Estilo Horarios) */
+.vet-info-centered,
+.cell-info-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.22rem;
+}
+
+.vet-name,
+.cell-title {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.98rem;
+    display: block;
+}
+
+.vet-spec,
+.cell-subtitle {
+    font-size: 0.83rem;
+    color: #64748b;
+    display: block;
+}
+
+/* Píldora limpia estilo hora-text para DUI o datos clave */
+.hora-text,
+.dui-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #1e293b;
+    padding: 0.38rem 0.9rem;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    letter-spacing: 0.4px;
+    min-width: 78px;
+}
+
+.horario-row.is-selected .hora-text,
+.selectable-row.is-selected .hora-text,
+.selectable-row.is-selected .dui-pill {
+    background-color: #d1fae5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+/* ── Barra Flotante de Acción al Seleccionar (Estilo Horarios) ────── */
+.selection-action-bar {
+    position: sticky;
+    top: 1rem;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 0.85rem 1.4rem;
+    border-radius: 10px;
+    margin: 0 auto 1.25rem auto;
+    max-width: 1040px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    animation: slideDownBar 0.2s ease-out;
+}
+
+@keyframes slideDownBar {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.selection-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    font-size: 0.94rem;
+    font-weight: 500;
+}
+
+.selection-badge {
+    background-color: #10b981;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0.22rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+}
+
+.selection-policy-hint {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+}
+
+.selection-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.btn-action-edit {
+    background-color: #334155;
+    color: #ffffff;
+    border: 1px solid #475569;
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.86rem;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-edit:hover {
+    background-color: #475569;
+}
+
+.btn-action-secondary {
+    background-color: #0f766e;
+    color: #ffffff;
+    border: 1px solid #115e59;
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.86rem;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-secondary:hover {
+    background-color: #115e59;
+}
+
+.btn-action-warning {
+    background-color: #d97706;
+    color: #ffffff;
+    border: 1px solid #b45309;
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.86rem;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-warning:hover {
+    background-color: #b45309;
+}
+
+.btn-action-delete {
+    background-color: #ef4444;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.86rem;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-delete:hover {
+    background-color: #dc2626;
+}
+
+.btn-action-reactivate {
+    background-color: #10b981;
+    color: #ffffff;
+    border: 1px solid #059669;
+    padding: 0.45rem 0.95rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.86rem;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-reactivate:hover {
+    background-color: #059669;
+}
+
+.btn-action-cancel {
+    background-color: transparent;
+    color: #cbd5e1;
+    border: 1px solid #64748b;
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.86rem;
+}
+
+.btn-action-cancel:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+/* ── Insignias de Relaciones y Estados ────────────────────────────── */
+.relations-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.badge-relation {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.77rem;
+    font-weight: 600;
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+}
+
+.badge-relation-clinical {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.badge-relation-history {
+    background-color: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.badge-relation-none {
+    background-color: #f8fafc;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+}
+
+.badge-inactivo {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-macho {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge-hembra {
+    background-color: #fce7f3;
+    color: #be185d;
+}
+
+.directory-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.inline-action-form {
+    display: inline-block;
+    margin: 0;
+}
+
+.btn-warning-outline {
+    background-color: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+}
+
+.btn-warning-outline:hover {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+/* ── Paneles de Detalle / Expediente en Edición ───────────────────── */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-stat-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+}
+
+.detail-stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.detail-stat-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 0.2rem;
+}
+
+.owner-summary-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.baja-policy-card {
+    margin-top: 2rem;
+    border: 1px solid #fecaca;
+    background: #fff5f5;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.baja-policy-card.baja-logica-mode {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+
+.baja-policy-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.baja-policy-header h4 {
+    margin: 0 0 0.35rem 0;
+    color: #0f172a;
+}
+
+.clinical-section-title {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 1.08rem;
+    color: #1e293b;
+}
+
+/* ── Estados Vacíos (Empty States) ────────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 2.75rem 1.5rem;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    margin: 1.25rem 0;
+}
+
+.empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}

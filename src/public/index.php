@@ -40,10 +40,11 @@ use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\PropietarioController;
 use App\Controllers\MascotaController;
+use App\Controllers\VeterinarioController;
 use App\Controllers\CitaController;
 use App\Controllers\ConsultaController;
 use App\Controllers\ServicioController;
-use App\Controllers\HorarioAtencionControlador;
+use App\Controllers\HorarioAtencionController;
 
 $router = new Router();
 
@@ -58,15 +59,28 @@ $router->get('/dashboard',          DashboardController::class, 'index');
 $router->get('/admin/dashboard',    DashboardController::class, 'admin');
 $router->get('/veterinario/agenda', DashboardController::class, 'veterinario');
 
-// Rutas de gestión de propietarios (US-02)
-$router->get('/propietarios',       PropietarioController::class, 'index');
-$router->get('/propietarios/crear', PropietarioController::class, 'create');
-$router->post('/propietarios',      PropietarioController::class, 'store');
+// Rutas de gestión y mantenimiento de propietarios (US-02, US-12)
+$router->get('/propietarios',           PropietarioController::class, 'index');
+$router->get('/propietarios/crear',     PropietarioController::class, 'create');
+$router->post('/propietarios',          PropietarioController::class, 'store');
+$router->get('/propietarios/editar',    PropietarioController::class, 'edit');
+$router->post('/propietarios/editar',   PropietarioController::class, 'update');
+$router->post('/propietarios/baja',     PropietarioController::class, 'baja');
+$router->post('/propietarios/eliminar', PropietarioController::class, 'delete');
 
-// Rutas de gestión de mascotas (US-03)
-$router->get('/mascotas',           MascotaController::class, 'index');
-$router->get('/mascotas/crear',     MascotaController::class, 'create');
-$router->post('/mascotas',          MascotaController::class, 'store');
+// Rutas de gestión y mantenimiento de mascotas (US-03, US-12)
+$router->get('/mascotas',               MascotaController::class, 'index');
+$router->get('/mascotas/crear',         MascotaController::class, 'create');
+$router->post('/mascotas',              MascotaController::class, 'store');
+$router->get('/mascotas/editar',        MascotaController::class, 'edit');
+$router->post('/mascotas/editar',       MascotaController::class, 'update');
+$router->post('/mascotas/baja',         MascotaController::class, 'baja');
+$router->post('/mascotas/eliminar',     MascotaController::class, 'delete');
+
+// Rutas de mantenimiento y baja controlada de veterinarios (US-12)
+$router->post('/veterinarios/editar',   VeterinarioController::class, 'update');
+$router->post('/veterinarios/baja',     VeterinarioController::class, 'baja');
+$router->post('/veterinarios/eliminar', VeterinarioController::class, 'delete');
 
 // Pestaña de citas: agendar (US-04), listar y cancelar (US-05)
 $router->get('/citas',              CitaController::class, 'index');
@@ -78,6 +92,7 @@ $router->post('/citas/cancelar',    CitaController::class, 'cancelar');
 // Consultas veterinarias — solo rol Veterinario (US-06)
 $router->get('/consultas/crear',    ConsultaController::class, 'crear');
 $router->post('/consultas',         ConsultaController::class, 'store');
+
 // Rutas de gestión del catálogo de servicios (US-10)
 $router->get('/servicios',          ServicioController::class, 'index');
 $router->get('/servicios/crear',    ServicioController::class, 'create');
@@ -87,12 +102,12 @@ $router->post('/servicios/editar',  ServicioController::class, 'update');
 $router->post('/servicios/estado',  ServicioController::class, 'toggleEstado');
 
 // Rutas de gestión de horarios de atención (US-11)
-$router->get('/horarios',          HorarioAtencionControlador::class, 'index');
-$router->get('/horarios/crear',    HorarioAtencionControlador::class, 'create');
-$router->post('/horarios',         HorarioAtencionControlador::class, 'store');
-$router->get('/horarios/editar',   HorarioAtencionControlador::class, 'edit');
-$router->post('/horarios/editar',  HorarioAtencionControlador::class, 'update');
-$router->post('/horarios/eliminar', HorarioAtencionControlador::class, 'delete');
+$router->get('/horarios',          HorarioAtencionController::class, 'index');
+$router->get('/horarios/crear',    HorarioAtencionController::class, 'create');
+$router->post('/horarios',         HorarioAtencionController::class, 'store');
+$router->get('/horarios/editar',   HorarioAtencionController::class, 'edit');
+$router->post('/horarios/editar',  HorarioAtencionController::class, 'update');
+$router->post('/horarios/eliminar', HorarioAtencionController::class, 'delete');
 
 // ── 5. Despacho ─────────────────────────────────────────────────── //
 $router->dispatch();
