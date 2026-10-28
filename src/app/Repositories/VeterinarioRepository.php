@@ -25,6 +25,11 @@ class VeterinarioRepository {
         return $this->model->findActivoById($id);
     }
 
+    /** @return array<string,mixed>|null */
+    public function findActivoByUsuarioId(int $idUsuario): ?array {
+        return $this->model->findActivoByUsuarioId($idUsuario);
+    }
+
     /** Bloquea al veterinario dentro de la transacción en curso. */
     public function bloquearActivo(int $id): bool {
         return $this->model->bloquearActivoPorId($id);

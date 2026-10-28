@@ -13,15 +13,7 @@
 </head>
 <body>
 
-<nav class="navbar">
-    <div class="navbar-brand">🐾 Clínica Veterinaria</div>
-    <div class="navbar-info">
-        <span class="navbar-user">
-            <?= $nombre ?> &middot; <span class="badge badge-<?= $rol === 'administrador' ? 'admin' : 'vet' ?>"><?= ucfirst($rol) ?></span>
-        </span>
-        <a href="/logout" class="btn btn-sm btn-outline">Cerrar sesión</a>
-    </div>
-</nav>
+<?php $navActivo = ''; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
     <div class="card">

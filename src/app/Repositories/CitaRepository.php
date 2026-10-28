@@ -44,8 +44,8 @@ class CitaRepository {
      *
      * @return array<array<string,mixed>>
      */
-    public function listDetalle(?string $estado = null, int $limite = 200): array {
-        return $this->model->findAllDetalle($estado, $limite);
+    public function listDetalle(?string $estado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        return $this->model->findAllDetalle($estado, $limite, $idVeterinario);
     }
 
     /**
@@ -55,6 +55,24 @@ class CitaRepository {
      */
     public function cancelarSiProgramada(int $id, ?string $motivo): bool {
         return $this->model->cancelarSiProgramada($id, $motivo) === 1;
+    }
+
+    /**
+     * Lee la cita bloqueando su fila; solo dentro de una transacción.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function bloquearPorId(int $id): ?array {
+        return $this->model->bloquearPorId($id);
+    }
+
+    /**
+     * Pasa la cita a Atendida solo si está Programada.
+     *
+     * @return bool true si cambió; false si no existe o ya no estaba Programada.
+     */
+    public function marcarAtendidaSiProgramada(int $id): bool {
+        return $this->model->marcarAtendidaSiProgramada($id) === 1;
     }
 
     /**

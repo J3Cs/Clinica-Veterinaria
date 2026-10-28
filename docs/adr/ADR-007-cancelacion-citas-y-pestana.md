@@ -34,7 +34,7 @@ US-05 permite al administrador cancelar una cita Programada, con un motivo opcio
 
 **Limitaciones conocidas:**
 - Se puede cancelar una cita Programada cuya fecha ya pasó (útil para registrar inasistencias); no hay un estado intermedio.
-- Aún no existe una pantalla para marcar una cita como Atendida; para probar ese caso se usa SQL.
+- Una cita pasa a Atendida al registrar su consulta (US-06, ADR-008); antes de eso no existía ese camino y se probaba por SQL.
 - El listado no pagina ni filtra por fecha o veterinario; con muchas citas pasadas sin atender, las más antiguas ocupan los primeros lugares.
 - La cancelación no registra quién la hizo ni cuándo (la tabla `citas` no tiene esas columnas).
 - Los veterinarios no ven su agenda; se decidió mantener las citas como una función exclusiva del administrador, tal como piden las historias.
