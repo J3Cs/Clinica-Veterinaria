@@ -1,7 +1,15 @@
 /* ===================================================================
    Catálogo de Servicios — US-10 (T-069, UI-01, TEC-01)
-   CSS propio sin bibliotecas externas.
+   Homologado con el sistema de tablas interactivas de modulos.css
    =================================================================== */
+
+.service-desc-text {
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    max-width: 340px;
+    display: inline-block;
+}
 
 .duracion-badge {
     display: inline-block;
@@ -15,8 +23,8 @@
 }
 
 .badge-inactivo {
-    background: var(--color-danger-lt);
-    color: var(--color-danger);
+    background-color: #fee2e2;
+    color: #991b1b;
 }
 
 .servicio-inactivo-row {

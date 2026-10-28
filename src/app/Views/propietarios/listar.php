@@ -203,8 +203,8 @@ $csrfToken    = $csrfToken ?? '';
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
-                                    <span class="hora-text"><?= $e($p['dui']) ?></span>
+                                <td style="white-space: nowrap;">
+                                    <span class="hora-text dui-pill"><?= $e($p['dui']) ?></span>
                                 </td>
                                 <td>
                                     <div class="vet-info-centered">
