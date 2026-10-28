@@ -139,10 +139,10 @@ $csrfToken           = $csrfToken ?? '';
         <?php else: ?>
 
             <p class="table-helper-text">
-                Selecciona cualquier mascota de la tabla para ver las acciones disponibles.
+                Selecciona cualquier tarjeta de mascota para ver las acciones disponibles.
             </p>
 
-            <!-- Barra de acción contextual que aparece al hacer clic en cualquier fila -->
+            <!-- Barra de acción contextual que aparece al hacer clic en cualquier tarjeta -->
             <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
                 <div class="selection-info">
                     <span class="selection-badge">Seleccionada</span>
@@ -189,7 +189,7 @@ $csrfToken           = $csrfToken ?? '';
                 </form>
             <?php endif; ?>
 
-            <!-- Vista Tabla Centrada y Justificada -->
+            <!-- Vista de Tarjetas Seleccionables Responsivas -->
             <div class="table-container-center">
                 <table class="data-table-horarios" id="pets-table">
                     <thead>
@@ -235,7 +235,7 @@ $csrfToken           = $csrfToken ?? '';
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
+                                <td data-label="Mascota">
                                     <div class="vet-info-centered">
                                         <span class="vet-name"><?= $e($m['nombre']) ?></span>
                                         <?php if (!empty($m['fecha_nacimiento'])): ?>
@@ -248,24 +248,24 @@ $csrfToken           = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Especie / Raza">
                                     <div class="vet-info-centered">
                                         <span class="hora-text"><?= $e($m['especie']) ?></span>
                                         <span class="vet-spec"><?= $e($m['raza'] ?: 'No especificada') ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Sexo">
                                     <span class="badge <?= ($m['sexo'] ?? '') === 'Macho' ? 'badge-macho' : 'badge-hembra' ?>">
                                         <?= mb_strtoupper($e($m['sexo']), 'UTF-8') ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Propietario">
                                     <div class="vet-info-centered">
                                         <span class="vet-name"><?= $e($m['propietario_nombre'] ?? 'Sin asignar') ?></span>
                                         <span class="vet-spec">DUI: <?= $e($m['propietario_dui'] ?? '—') ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Historial">
                                     <div class="relations-group">
                                         <?php if ($citasTotal > 0): ?>
                                             <span class="badge-relation badge-relation-clinical">
@@ -290,7 +290,7 @@ $csrfToken           = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Estado">
                                     <span class="badge <?= $activa ? 'badge-vet' : 'badge-inactivo' ?>">
                                         <?= $activa ? 'ACTIVA' : 'INACTIVA' ?>
                                     </span>

@@ -19,7 +19,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Registro de mascotas de pacientes veterinarios">
     <title>Registrar Mascota — Clínica Veterinaria</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
 </head>
 <body class="dashboard-page">
 

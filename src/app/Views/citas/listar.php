@@ -138,10 +138,10 @@ $filtrosEstado = [
         <?php else: ?>
 
             <p class="table-helper-text">
-                Selecciona cualquier cita de la tabla para ver las acciones disponibles (cancelar cita programada o consultar expediente de la mascota).
+                Selecciona cualquier tarjeta de cita para ver las acciones disponibles (cancelar cita programada o consultar expediente de la mascota).
             </p>
 
-            <!-- Barra de acción contextual al seleccionar una fila (Estilo Horarios / Propietarios) -->
+            <!-- Barra de acción contextual al seleccionar una tarjeta (Estilo Horarios / Propietarios) -->
             <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
                 <div class="selection-info">
                     <span class="selection-badge">Seleccionada</span>
@@ -161,7 +161,7 @@ $filtrosEstado = [
                 </div>
             </div>
 
-            <!-- Vista Tabla Centrada y Justificada -->
+            <!-- Vista de Tarjetas Seleccionables Responsivas -->
             <div class="table-container-center">
                 <table class="data-table-horarios" id="citas-table">
                     <thead>
@@ -204,16 +204,16 @@ $filtrosEstado = [
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
+                                <td data-label="Fecha">
                                     <span class="hora-text"><?= $e($fechaFmt) ?></span>
                                 </td>
-                                <td>
+                                <td data-label="Horario">
                                     <div class="vet-info-centered">
                                         <span class="hora-text"><?= $e($rangoHora) ?></span>
                                         <span class="vet-spec"><?= $durMin ?> min</span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Mascota / Propietario">
                                     <div class="vet-info-centered">
                                         <span class="vet-name">
                                             <?= $e($c['mascota_nombre']) ?>
@@ -224,21 +224,21 @@ $filtrosEstado = [
                                         <span class="vet-spec"><?= $e($c['propietario_nombre']) ?></span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Servicio Clínico">
                                     <div class="vet-info-centered">
                                         <span class="vet-name" style="font-size: 0.93rem; font-weight: 600;">
                                             <?= $e($c['nombre_servicio']) ?>
                                         </span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Médico Veterinario">
                                     <div class="vet-info-centered">
                                         <span class="vet-name" style="font-size: 0.93rem;">
                                             <?= $e($c['veterinario_nombre']) ?>
                                         </span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Estado">
                                     <div class="vet-info-centered">
                                         <span class="estado-badge <?= $e($claseEstado($estado)) ?>">
                                             <?= mb_strtoupper($e($estado), 'UTF-8') ?>

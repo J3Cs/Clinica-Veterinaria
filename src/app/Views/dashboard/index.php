@@ -9,17 +9,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Panel principal — Clínica Veterinaria">
     <title>Dashboard — Clínica Veterinaria</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
 </head>
-<body>
+<body class="dashboard-page">
 
 <?php $navActivo = ''; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
-    <div class="card">
+    <div class="card card-modulo">
         <h2>Bienvenido, <?= $nombre ?></h2>
         <p>Has iniciado sesión como <strong><?= ucfirst($rol) ?></strong>.</p>
-        <p class="text-muted">Los módulos del sistema estarán disponibles en los próximos incrementos.</p>
+        <p class="text-muted">Selecciona una opción del menú superior para comenzar.</p>
     </div>
 </main>
 

@@ -114,10 +114,10 @@ $csrfToken    = $csrfToken ?? '';
         <?php else: ?>
 
             <p class="table-helper-text">
-                Selecciona cualquier propietario de la tabla para ver las acciones disponibles.
+                Selecciona cualquier tarjeta de propietario para ver las acciones disponibles.
             </p>
 
-            <!-- Barra de acción contextual que aparece al hacer clic en cualquier fila -->
+            <!-- Barra de acción contextual que aparece al hacer clic en cualquier tarjeta -->
             <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
                 <div class="selection-info">
                     <span class="selection-badge">Seleccionado</span>
@@ -161,7 +161,7 @@ $csrfToken    = $csrfToken ?? '';
                 </form>
             <?php endif; ?>
 
-            <!-- Vista Tabla Centrada y Justificada -->
+            <!-- Vista de Tarjetas Seleccionables Responsivas -->
             <div class="table-container-center">
                 <table class="data-table-horarios" id="owners-table">
                     <thead>
@@ -203,10 +203,10 @@ $csrfToken    = $csrfToken ?? '';
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td style="white-space: nowrap;">
+                                <td data-label="DUI">
                                     <span class="hora-text dui-pill"><?= $e($p['dui']) ?></span>
                                 </td>
-                                <td>
+                                <td data-label="Propietario">
                                     <div class="vet-info-centered">
                                         <span class="vet-name"><?= $e($p['nombre_completo']) ?></span>
                                         <?php if (!empty($p['direccion'])): ?>
@@ -214,7 +214,7 @@ $csrfToken    = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Contacto">
                                     <div class="vet-info-centered">
                                         <span class="vet-name" style="font-size: 0.92rem; font-weight: 600;">
                                             <?= $e($p['telefono'] ?: 'Sin teléfono') ?>
@@ -224,7 +224,7 @@ $csrfToken    = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Registros Asociados">
                                     <div class="relations-group">
                                         <?php if ($mascotasTotal > 0): ?>
                                             <span class="badge-relation">
@@ -247,7 +247,7 @@ $csrfToken    = $csrfToken ?? '';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Estado">
                                     <span class="badge <?= $activo ? 'badge-vet' : 'badge-inactivo' ?>">
                                         <?= $activo ? 'ACTIVO' : 'INACTIVO' ?>
                                     </span>

@@ -1,14 +1,15 @@
 /* ===================================================================
    Catálogo de Servicios — US-10 (T-069, UI-01, TEC-01)
-   Homologado con el sistema de tablas interactivas de modulos.css
+   Homologado con el sistema de tarjetas seleccionables de modulos.css
    =================================================================== */
 
 .service-desc-text {
     color: #475569;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     line-height: 1.4;
-    max-width: 340px;
+    max-width: 100%;
     display: inline-block;
+    overflow-wrap: anywhere;
 }
 
 .duracion-badge {

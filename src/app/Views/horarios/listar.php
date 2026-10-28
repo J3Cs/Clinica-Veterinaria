@@ -1,6 +1,7 @@
 <?php
 /**
  * Listado y Matriz de Horarios de Atención — US-11 (T-074), UI-01, ACC-01, SEC-01
+ * Homologado con el diseño de tarjetas seleccionables y pantalla completa de modulos.css
  *
  * @var array<array<string,mixed>> $horarios
  * @var array<array<string,mixed>> $veterinarios
@@ -31,249 +32,15 @@ $diasNombres = [
     <meta name="description" content="Gestión y asignación de horarios de atención médica">
     <title>Horarios de Atención — Clínica Veterinaria</title>
     <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
     <link rel="stylesheet" href="/assets/css/horarios.css?v=<?= time() ?>">
-    <style>
-        /* Estilos garantizados anti-caché para Horarios de Atención */
-        .card-horarios {
-            max-width: 1060px;
-            margin: 0 auto;
-        }
-        .table-helper-text {
-            font-size: 0.9rem;
-            color: #475569;
-            margin: 1rem 0 1.25rem 0;
-            text-align: center;
-            background: #f8fafc;
-            padding: 0.6rem 1rem;
-            border-radius: 6px;
-            border: 1px dashed #cbd5e1;
-        }
-        .table-container-center {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            margin: 1rem 0 2rem 0;
-            overflow-x: auto;
-        }
-        .data-table-horarios {
-            width: 100%;
-            max-width: 940px;
-            border-collapse: separate;
-            border-spacing: 0 12px;
-            margin: 0 auto;
-        }
-        .data-table-horarios thead th {
-            padding: 0.85rem 1.75rem;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #1e293b;
-            text-align: center;
-            background: transparent;
-            border-bottom: 2px solid #cbd5e1;
-            letter-spacing: 0.3px;
-            white-space: nowrap;
-        }
-        .horario-row {
-            background-color: #ffffff;
-            cursor: pointer;
-            transition: all 0.18s ease;
-            user-select: none;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
-        }
-        .horario-row:hover {
-            background-color: #f8fafc;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.08);
-        }
-        .data-table-horarios tbody td {
-            padding: 1.15rem 1.75rem;
-            vertical-align: middle;
-            text-align: center;
-            font-size: 0.95rem;
-            border-top: 1px solid #e2e8f0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .data-table-horarios tbody td:first-child {
-            border-top-left-radius: 10px;
-            border-bottom-left-radius: 10px;
-            border-left: 1px solid #e2e8f0;
-            width: 56px;
-            padding-left: 1.25rem;
-            padding-right: 0.5rem;
-        }
-        .data-table-horarios tbody td:last-child {
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
-            border-right: 1px solid #e2e8f0;
-        }
-        /* Estado cuando el usuario hace clic en una fila */
-        .horario-row.is-selected {
-            background-color: #ecfdf5 !important;
-            box-shadow: 0 4px 14px rgba(44, 107, 79, 0.16);
-        }
-        .horario-row.is-selected td {
-            border-top-color: #34d399;
-            border-bottom-color: #34d399;
-        }
-        .horario-row.is-selected td:first-child {
-            border-left: 5px solid #2c6b4f;
-        }
-        .horario-row.is-selected td:last-child {
-            border-right-color: #34d399;
-        }
-        /* Radio / Check visual en cada fila */
-        .custom-radio-indicator {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid #94a3b8;
-            background-color: #ffffff;
-            transition: all 0.2s ease;
-            vertical-align: middle;
-            position: relative;
-        }
-        .horario-row:hover .custom-radio-indicator {
-            border-color: #2c6b4f;
-        }
-        .horario-row.is-selected .custom-radio-indicator {
-            border-color: #2c6b4f;
-            background-color: #2c6b4f;
-            box-shadow: inset 0 0 0 4px #ffffff;
-        }
-        /* Veterinario y Especialidad bien separados y centrados */
-        .vet-info-centered {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 0.25rem;
-        }
-        .vet-name {
-            font-weight: 700;
-            color: #0f172a;
-            font-size: 1rem;
-            display: block;
-        }
-        .vet-spec {
-            font-size: 0.84rem;
-            color: #64748b;
-            display: block;
-        }
-        /* Nueva tipografía moderna y limpia para la hora (No monospace) */
-        .hora-text {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-            font-size: 0.96rem;
-            font-weight: 600;
-            color: #1e293b;
-            padding: 0.4rem 1rem;
-            background-color: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            letter-spacing: 0.4px;
-            min-width: 78px;
-        }
-        .horario-row.is-selected .hora-text {
-            background-color: #d1fae5;
-            border-color: #6ee7b7;
-            color: #065f46;
-        }
-        .duracion-text {
-            display: inline-block;
-            color: #475569;
-            font-weight: 600;
-            font-size: 0.92rem;
-            background: #f8fafc;
-            padding: 0.3rem 0.75rem;
-            border-radius: 6px;
-        }
-        /* Barra flotante de acción al seleccionar */
-        .selection-action-bar {
-            position: sticky;
-            top: 1rem;
-            z-index: 50;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #1e293b;
-            color: #ffffff;
-            padding: 0.85rem 1.5rem;
-            border-radius: 10px;
-            margin: 0 auto 1.25rem auto;
-            max-width: 940px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-        }
-        .selection-info {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        .selection-badge {
-            background-color: #10b981;
-            color: #ffffff;
-            font-weight: 700;
-            padding: 0.2rem 0.65rem;
-            border-radius: 999px;
-            font-size: 0.85rem;
-        }
-        .selection-buttons {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-        }
-        .btn-action-edit {
-            background-color: #334155;
-            color: #ffffff;
-            border: 1px solid #475569;
-            padding: 0.45rem 1rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.88rem;
-        }
-        .btn-action-edit:hover {
-            background-color: #475569;
-        }
-        .btn-action-delete {
-            background-color: #ef4444;
-            color: #ffffff;
-            border: 1px solid #dc2626;
-            padding: 0.45rem 1rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.88rem;
-        }
-        .btn-action-delete:hover {
-            background-color: #dc2626;
-        }
-        .btn-action-cancel {
-            background-color: transparent;
-            color: #cbd5e1;
-            border: 1px solid #64748b;
-            padding: 0.45rem 0.9rem;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            font-size: 0.88rem;
-        }
-        .btn-action-cancel:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: #ffffff;
-        }
-    </style>
 </head>
 <body class="dashboard-page">
 
 <?php $navActivo = 'horarios'; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
-    <div class="card card-horarios">
+    <div class="card card-modulo card-horarios">
         <div class="card-header-actions">
             <div>
                 <h2>Horarios de Atención Médica</h2>
@@ -325,7 +92,11 @@ $diasNombres = [
             </div>
         <?php else: ?>
 
-            <!-- Barra de acción contextual que aparece al hacer clic en cualquier fila -->
+            <p class="table-helper-text">
+                Selecciona cualquier horario para editar o eliminar la franja de atención.
+            </p>
+
+            <!-- Barra de acción contextual que aparece al hacer clic en cualquier tarjeta -->
             <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
                 <div class="selection-info">
                     <span class="selection-badge">Seleccionado</span>
@@ -350,9 +121,9 @@ $diasNombres = [
                 <input type="hidden" name="id_horario" id="input-delete-id" value="">
             </form>
 
-            <!-- Vista Tabla Centrada y Justificada -->
+            <!-- Vista de Tarjetas Seleccionables Responsivas -->
             <div class="table-container-center">
-                <table class="data-table-horarios" id="tabla-horarios">
+                <table class="data-table-horarios tabla-escritorio" id="tabla-horarios">
                     <thead>
                         <tr>
                             <th></th>
@@ -383,7 +154,7 @@ $diasNombres = [
                                 <td>
                                     <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td>
+                                <td data-label="Veterinario">
                                     <div class="vet-info-centered">
                                         <span class="vet-name"><?= $e($h['veterinario_nombre']) ?></span>
                                         <?php if (!empty($h['especialidad'])): ?>
@@ -391,18 +162,18 @@ $diasNombres = [
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Día">
                                     <span class="badge badge-dia badge-dia-<?= (int)$h['dia_semana'] ?>">
                                         <?= mb_strtoupper($e($diaNombre), 'UTF-8') ?>
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Hora Inicio">
                                     <span class="hora-text"><?= $e($inicio) ?></span>
                                 </td>
-                                <td>
+                                <td data-label="Hora Fin">
                                     <span class="hora-text"><?= $e($fin) ?></span>
                                 </td>
-                                <td>
+                                <td data-label="Duración Franja">
                                     <span class="duracion-text"><?= $e($durTxt) ?></span>
                                 </td>
                             </tr>

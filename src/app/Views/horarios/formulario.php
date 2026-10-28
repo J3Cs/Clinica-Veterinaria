@@ -40,68 +40,22 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
     <meta name="description" content="<?= $titulo ?> de atención médica">
     <title><?= $titulo ?> — Clínica Veterinaria</title>
     <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
     <link rel="stylesheet" href="/assets/css/horarios.css?v=<?= time() ?>">
-    <style>
-        .card-form {
-            max-width: 740px;
-            margin: 0 auto;
-        }
-        .btn-cancel-visible {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            padding: 0.65rem 1.25rem;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 6px;
-            background-color: #f8fafc;
-            color: #334155 !important;
-            font-weight: 600;
-            font-size: 0.95rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        .btn-cancel-visible:hover {
-            background-color: #e2e8f0;
-            border-color: #94a3b8;
-            color: #0f172a !important;
-            text-decoration: none;
-        }
-        .btn-back-visible {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.45rem 0.95rem;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 6px;
-            background-color: #ffffff;
-            color: #334155 !important;
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        .btn-back-visible:hover {
-            background-color: #f1f5f9;
-            border-color: #94a3b8;
-            color: #0f172a !important;
-            text-decoration: none;
-        }
-    </style>
 </head>
 <body class="dashboard-page">
 
 <?php $navActivo = 'horarios'; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
-    <div class="card card-form">
+    <div class="card card-modulo card-form">
         <div class="card-header-actions">
             <div>
                 <h2><?= $titulo ?></h2>
                 <p class="text-muted">Configure los días y el rango horario en que el médico veterinario atenderá citas clínicas.</p>
             </div>
             <div>
-                <a href="/horarios" class="btn-back-visible">&larr; Volver al listado</a>
+                <a href="/horarios" class="btn btn-sm btn-outline-dark">&larr; Volver al listado</a>
             </div>
         </div>
 
@@ -131,7 +85,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
 
                     <!-- Veterinario -->
                     <div class="form-group">
-                        <label for="id_veterinario" class="form-label required">Médico Veterinario</label>
+                        <label for="id_veterinario" class="form-label required">Médico Veterinario <span class="text-danger">*</span></label>
                         <?php if ($modoEdicion): ?>
                             <input type="text" class="form-control" value="<?= $e($horario['veterinario_nombre'] . (!empty($horario['especialidad']) ? ' (' . $horario['especialidad'] . ')' : '')) ?>" disabled>
                             <input type="hidden" name="id_veterinario" value="<?= (int)$horario['id_veterinario'] ?>">
@@ -153,7 +107,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
 
                     <!-- Día de la semana -->
                     <div class="form-group">
-                        <label for="dia_semana" class="form-label required">Día de la Semana</label>
+                        <label for="dia_semana" class="form-label required">Día de la Semana <span class="text-danger">*</span></label>
                         <select name="dia_semana" id="dia_semana" class="form-control <?= isset($fieldErrors['dia_semana']) ? 'is-invalid' : '' ?>" required>
                             <?php foreach ($diasNombres as $num => $nom): ?>
                                 <option value="<?= $num ?>" <?= ((int)$selectedDia === $num) ? 'selected' : '' ?>>
@@ -168,7 +122,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
 
                     <!-- Hora de Inicio -->
                     <div class="form-group">
-                        <label for="hora_inicio" class="form-label required">Hora de Inicio</label>
+                        <label for="hora_inicio" class="form-label required">Hora de Inicio <span class="text-danger">*</span></label>
                         <input type="time" name="hora_inicio" id="hora_inicio" class="form-control <?= isset($fieldErrors['hora_inicio']) ? 'is-invalid' : '' ?>" value="<?= $e($valInicio) ?>" required step="300">
                         <?php if (isset($fieldErrors['hora_inicio'])): ?>
                             <div class="invalid-feedback"><?= $e($fieldErrors['hora_inicio']) ?></div>
@@ -178,7 +132,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
 
                     <!-- Hora de Fin -->
                     <div class="form-group">
-                        <label for="hora_fin" class="form-label required">Hora de Fin</label>
+                        <label for="hora_fin" class="form-label required">Hora de Fin <span class="text-danger">*</span></label>
                         <input type="time" name="hora_fin" id="hora_fin" class="form-control <?= isset($fieldErrors['hora_fin']) ? 'is-invalid' : '' ?>" value="<?= $e($valFin) ?>" required step="300">
                         <?php if (isset($fieldErrors['hora_fin'])): ?>
                             <div class="invalid-feedback"><?= $e($fieldErrors['hora_fin']) ?></div>
@@ -194,7 +148,7 @@ $titulo    = $modoEdicion ? 'Editar Franja Horaria' : 'Asignar Franja Horaria';
                     <button type="submit" class="btn btn-primary" id="btn-submit">
                         <?= $modoEdicion ? 'Actualizar Franja' : 'Guardar Franja' ?>
                     </button>
-                    <a href="/horarios" class="btn-cancel-visible">Cancelar y Salir</a>
+                    <a href="/horarios" class="btn btn-outline-dark">Cancelar y Salir</a>
                 </div>
 
             </form>
