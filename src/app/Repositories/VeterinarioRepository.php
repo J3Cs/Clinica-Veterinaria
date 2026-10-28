@@ -102,6 +102,19 @@ class VeterinarioRepository {
     }
 
     /**
+     * Cancela automáticamente las citas en estado 'Programada' de un veterinario desactivado.
+     */
+    public function cancelarCitasProgramadas(
+        int $idVeterinario,
+        string $motivo = 'Cancelada automáticamente por desactivación del veterinario'
+    ): int {
+        if (method_exists($this->model, 'cancelarCitasProgramadas')) {
+            return $this->model->cancelarCitasProgramadas($idVeterinario, $motivo);
+        }
+        return 0;
+    }
+
+    /**
      * Reactiva la cuenta de usuario del veterinario.
      */
     public function activar(int $idUsuario): bool {

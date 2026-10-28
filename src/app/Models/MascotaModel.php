@@ -316,9 +316,63 @@ class MascotaModel extends BaseModel {
     }
 
     /**
-     * Desactiva lógicamente una mascota (BAJA-01, T-077, T-090).
+     * Cancela automáticamente todas las citas en estado 'Programada' asociadas a una mascota
+     * cuando ésta es desactivada (T-077, BAJA-01).
+     *
+     * @param int    $idMascota
+     * @param string $motivo
+     * @return int Cantidad de citas programadas canceladas automáticamente.
+     */
+    public function cancelarCitasProgramadas(
+        int $idMascota,
+        string $motivo = 'Cancelada automáticamente por desactivación de la mascota'
+    ): int {
+        $stmt = $this->db->prepare(
+            "UPDATE citas
+                SET estado = 'Cancelada',
+                    motivo_cancelacion = COALESCE(motivo_cancelacion, :motivo)
+              WHERE id_mascota = :id_mascota
+                AND estado = 'Programada'"
+        );
+        $stmt->execute([
+            ':id_mascota' => $idMascota,
+            ':motivo'     => $motivo,
+        ]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Cancela automáticamente todas las citas en estado 'Programada' de las mascotas
+     * pertenecientes a un propietario que es desactivado (T-077, BAJA-01).
+     *
+     * @param int    $idPropietario
+     * @param string $motivo
+     * @return int Cantidad de citas programadas canceladas automáticamente.
+     */
+    public function cancelarCitasProgramadasPorPropietario(
+        int $idPropietario,
+        string $motivo = 'Cancelada automáticamente por desactivación del propietario'
+    ): int {
+        $stmt = $this->db->prepare(
+            "UPDATE citas c
+         INNER JOIN mascotas m ON m.id_mascota = c.id_mascota
+                SET c.estado = 'Cancelada',
+                    c.motivo_cancelacion = COALESCE(c.motivo_cancelacion, :motivo)
+              WHERE m.id_propietario = :id_propietario
+                AND c.estado = 'Programada'"
+        );
+        $stmt->execute([
+            ':id_propietario' => $idPropietario,
+            ':motivo'         => $motivo,
+        ]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Desactiva lógicamente una mascota y cancela automáticamente sus citas programadas (BAJA-01, T-077, T-090).
      */
     public function desactivar(int $id): bool {
+        $this->cancelarCitasProgramadas($id);
         $stmt = $this->db->prepare('UPDATE mascotas SET activo = 0 WHERE id_mascota = :id');
         return $stmt->execute([':id' => $id]);
     }
@@ -332,11 +386,13 @@ class MascotaModel extends BaseModel {
     }
 
     /**
-     * Desactiva todas las mascotas pertenecientes a un propietario que pasa a baja lógica (T-077).
+     * Desactiva todas las mascotas pertenecientes a un propietario que pasa a baja lógica
+     * y cancela automáticamente sus citas en estado 'Programada' (T-077).
      *
      * @return int Cantidad de mascotas desactivadas.
      */
     public function desactivarPorPropietario(int $idPropietario): int {
+        $this->cancelarCitasProgramadasPorPropietario($idPropietario);
         $stmt = $this->db->prepare(
             'UPDATE mascotas SET activo = 0 WHERE id_propietario = :id_propietario AND activo = 1'
         );

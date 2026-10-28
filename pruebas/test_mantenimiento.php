@@ -353,8 +353,37 @@ class MockMascotaModelUS12 extends MascotaModel {
         ];
     }
 
+    public function cancelarCitasProgramadas(
+        int $idMascota,
+        string $motivo = 'Cancelada automáticamente por desactivación de la mascota'
+    ): int {
+        $canceladas = 0;
+        foreach ($this->store->citas as $idCita => $c) {
+            if ((int)$c['id_mascota'] === $idMascota && ($c['estado'] ?? '') === 'Programada') {
+                $this->store->citas[$idCita]['estado'] = 'Cancelada';
+                $this->store->citas[$idCita]['motivo_cancelacion'] = $c['motivo_cancelacion'] ?? $motivo;
+                $canceladas++;
+            }
+        }
+        return $canceladas;
+    }
+
+    public function cancelarCitasProgramadasPorPropietario(
+        int $idPropietario,
+        string $motivo = 'Cancelada automáticamente por desactivación del propietario'
+    ): int {
+        $canceladas = 0;
+        foreach ($this->store->mascotas as $idM => $m) {
+            if ((int)$m['id_propietario'] === $idPropietario) {
+                $canceladas += $this->cancelarCitasProgramadas((int)$idM, $motivo);
+            }
+        }
+        return $canceladas;
+    }
+
     public function desactivar(int $id): bool {
         if (!isset($this->store->mascotas[$id])) return false;
+        $this->cancelarCitasProgramadas($id);
         $this->store->mascotas[$id]['activo'] = 0;
         return true;
     }
@@ -366,6 +395,7 @@ class MockMascotaModelUS12 extends MascotaModel {
     }
 
     public function desactivarPorPropietario(int $idPropietario): int {
+        $this->cancelarCitasProgramadasPorPropietario($idPropietario);
         $count = 0;
         foreach ($this->store->mascotas as $id => $m) {
             if ((int)$m['id_propietario'] === $idPropietario && (int)($m['activo'] ?? 1) === 1) {
@@ -480,6 +510,21 @@ class MockVeterinarioModelUS12 extends VeterinarioModel {
         return true;
     }
 
+    public function cancelarCitasProgramadas(
+        int $idVeterinario,
+        string $motivo = 'Cancelada automáticamente por desactivación del veterinario'
+    ): int {
+        $canceladas = 0;
+        foreach ($this->store->citas as $idCita => $c) {
+            if ((int)$c['id_veterinario'] === $idVeterinario && ($c['estado'] ?? '') === 'Programada') {
+                $this->store->citas[$idCita]['estado'] = 'Cancelada';
+                $this->store->citas[$idCita]['motivo_cancelacion'] = $c['motivo_cancelacion'] ?? $motivo;
+                $canceladas++;
+            }
+        }
+        return $canceladas;
+    }
+
     public function delete(int $idVeterinario): bool {
         if (!isset($this->store->veterinarios[$idVeterinario])) return false;
         unset($this->store->veterinarios[$idVeterinario]);
@@ -538,7 +583,7 @@ $store->mascotas[2] = [
     'activo'                     => 1,
 ];
 
-// Cita, consulta e historial asociados a Mascota 1 y Veterinario 1
+// Citas (una Atendida y una Programada), consulta e historial asociados a Mascota 1 y Veterinario 1
 $store->citas[10] = [
     'id_cita'        => 10,
     'id_mascota'     => 1,
@@ -547,6 +592,16 @@ $store->citas[10] = [
     'fecha_cita'     => '2026-10-25',
     'hora_cita'      => '09:00:00',
     'estado'         => 'Atendida',
+];
+
+$store->citas[11] = [
+    'id_cita'        => 11,
+    'id_mascota'     => 1,
+    'id_veterinario' => 1,
+    'id_servicio'    => 1,
+    'fecha_cita'     => '2026-11-10',
+    'hora_cita'      => '10:30:00',
+    'estado'         => 'Programada',
 ];
 
 $store->consultas[20] = [
@@ -634,7 +689,8 @@ runTest('T-076: Al cargar una mascota se conoce su propietario y todas las relac
     assert($expediente['propietario_nombre'] === 'Carlos Alberto Perez', 'Se conoce el nombre del propietario');
     assert($expediente['propietario_dui'] === '01234567-8', 'Se conoce el DUI del propietario');
     assert(isset($expediente['relaciones']), 'Incluye estructura de relaciones clinicas');
-    assert($expediente['relaciones']['citas_total'] === 1, 'Registra 1 cita');
+    assert($expediente['relaciones']['citas_total'] === 2, 'Registra 2 citas (1 Atendida + 1 Programada)');
+    assert($expediente['relaciones']['citas_programadas'] === 1, 'Registra 1 cita programada activa');
     assert($expediente['relaciones']['consultas_total'] === 1, 'Registra 1 consulta veterinaria');
     assert($expediente['relaciones']['historial_total'] === 1, 'Registra 1 antecedente en historial_mascota');
     assert($expediente['relaciones']['tiene_dependencias'] === true, 'Marca tiene_dependencias = true');
@@ -693,16 +749,18 @@ runTest('T-077 / T-081: Eliminacion fisica de mascota SIN dependencias clinicas'
     assert(!isset($store->mascotas[2]), 'La mascota #2 ya no debe existir en la tabla mascotas');
 });
 
-runTest('T-077 / T-081 / T-090: Baja logica de mascota CON dependencias clinicas preserva citas e historial', function () use ($service, $store) {
-    // Mascota 1 tiene cita #10, consulta #20 e historial #30
+runTest('T-077 / T-081 / T-090: Baja logica de mascota CON dependencias cancela citas programadas y preserva historial', function () use ($service, $store) {
+    // Mascota 1 tiene cita #10 (Atendida), cita #11 (Programada), consulta #20 e historial #30
+    assert($store->citas[11]['estado'] === 'Programada', 'Antes de la baja, la cita #11 esta Programada');
     $res = $service->darDeBajaMascota(1);
     assert($res['success'] === true, 'Operacion exitosa');
     assert($res['tipo_baja'] === 'logica', 'Con relaciones clinicas debe aplicar baja logica');
     assert(isset($store->mascotas[1]), 'El registro de la mascota #1 se conserva en la BD');
     assert((int)$store->mascotas[1]['activo'] === 0, 'La mascota #1 queda con activo = 0');
 
-    // Verificar que NO se borraron en cascada citas, consultas ni historial
-    assert(isset($store->citas[10]), 'La cita #10 se preserva intacta');
+    // Verificar que las citas en estado Programada se cancelan automáticamente y las Atendidas quedan intactas
+    assert(isset($store->citas[10]) && $store->citas[10]['estado'] === 'Atendida', 'La cita #10 Atendida se preserva intacta');
+    assert(isset($store->citas[11]) && $store->citas[11]['estado'] === 'Cancelada', 'La cita #11 Programada pasa automaticamente a Cancelada');
     assert(isset($store->consultas[20]), 'La consulta #20 se preserva intacta');
     assert(isset($store->historial[30]), 'El historial #30 se preserva intacto');
 
@@ -710,9 +768,18 @@ runTest('T-077 / T-081 / T-090: Baja logica de mascota CON dependencias clinicas
     $activas = $service->listarMascotas(true);
     assert(count($activas) === 0, 'El listado operativo filtra la mascota inactiva por defecto');
 
-    // Reactivar mascota #1 para probar luego la baja en cascada lógica desde el propietario
+    // Reactivar mascota #1 y agregar una nueva cita Programada (#12) para probar la baja en cascada desde el propietario
     $react = $service->reactivarMascota(1);
     assert($react['success'] === true && (int)$store->mascotas[1]['activo'] === 1, 'Mascota #1 reactivada');
+    $store->citas[12] = [
+        'id_cita'        => 12,
+        'id_mascota'     => 1,
+        'id_veterinario' => 1,
+        'id_servicio'    => 1,
+        'fecha_cita'     => '2026-11-15',
+        'hora_cita'      => '11:00:00',
+        'estado'         => 'Programada',
+    ];
 });
 
 runTest('T-077 / T-081: Eliminacion fisica de propietario SIN mascotas ni dependencias', function () use ($service, $store) {
@@ -723,13 +790,16 @@ runTest('T-077 / T-081: Eliminacion fisica de propietario SIN mascotas ni depend
     assert(!isset($store->propietarios[2]), 'El propietario #2 fue eliminado fisicamente');
 });
 
-runTest('T-077 / T-081 / T-090: Baja logica de propietario CON dependencias desactiva sus mascotas y conserva historial', function () use ($service, $store) {
-    // Propietario 1 tiene a la Mascota 1 (activa) y datos clínicos
+runTest('T-077 / T-081 / T-090: Baja logica de propietario CON dependencias desactiva mascotas, cancela citas programadas y conserva historial', function () use ($service, $store) {
+    // Propietario 1 tiene a la Mascota 1 (activa) con cita #12 Programada y datos clínicos
+    assert($store->citas[12]['estado'] === 'Programada', 'Cita #12 esta Programada antes de desactivar propietario');
     $res = $service->darDeBajaPropietario(1);
     assert($res['success'] === true, 'Operacion exitosa');
     assert($res['tipo_baja'] === 'logica', 'Con mascotas/citas debe aplicar baja logica');
     assert(isset($store->propietarios[1]) && (int)$store->propietarios[1]['activo'] === 0, 'Propietario #1 desactivado logicamente');
     assert((int)$store->mascotas[1]['activo'] === 0, 'Las mascotas asociadas al propietario tambien se desactivan');
+    assert($store->citas[12]['estado'] === 'Cancelada', 'Las citas programadas de sus mascotas se cancelan automaticamente');
+    assert($store->citas[10]['estado'] === 'Atendida', 'Las citas ya atendidas se conservan en estado Atendida');
     assert(isset($store->citas[10]) && isset($store->consultas[20]) && isset($store->historial[30]), 'Citas e historial clinico intactos');
 
     // Listado operativo de propietarios excluye inactivos por defecto (T-090)
@@ -779,6 +849,16 @@ runTest('T-077 / T-078: Edicion de datos profesionales de veterinario y reactiva
 
 runTest('T-076 / T-077 / T-090: Integracion PDO real contra esquema MySQL (con rollback)', function () {
     $pdo = \App\Config\Database::getConnection();
+    // Asegurar que cualquier mascota ya inactiva en BD no conserve citas Programadas huérfanas
+    $pdo->exec(
+        "UPDATE citas c
+     INNER JOIN mascotas m ON m.id_mascota = c.id_mascota
+            SET c.estado = 'Cancelada',
+                c.motivo_cancelacion = COALESCE(c.motivo_cancelacion, 'Cancelada automáticamente por desactivación de la mascota')
+          WHERE m.activo = 0
+            AND c.estado = 'Programada'"
+    );
+
     $pdo->beginTransaction();
     try {
         $realPropRepo = new PropietarioRepository(new PropietarioModel());

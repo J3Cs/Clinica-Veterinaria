@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const citas    = selectedOwnerRow.getAttribute('data-citas') || '0';
             const msg = `¿Deseas desactivar al propietario "${nombre}" (DUI: ${dui})?\n\n` +
                         `Tiene ${mascotas} mascota(s) y ${citas} cita(s) registradas.\n` +
-                        `El propietario y sus mascotas quedarán inactivos, pero su historial médico se conservará.`;
+                        `El propietario y sus mascotas quedarán inactivos, sus citas programadas pendientes se cancelarán automáticamente y su historial médico se conservará.`;
             if (window.confirm(msg)) {
                 if (inputBajaAccion) inputBajaAccion.value = 'baja';
                 formBaja.submit();
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (tieneDep) {
                 mensaje = `¿Deseas desactivar al propietario "${nombre}" (DUI: ${dui})?\n\n` +
                           `Tiene ${numMascotas} mascota(s) y ${numCitas} cita(s) registradas.\n` +
-                          `El propietario y sus mascotas quedarán inactivos, pero su historial médico se conservará.`;
+                          `El propietario y sus mascotas quedarán inactivos, sus citas programadas pendientes se cancelarán automáticamente y su historial médico se conservará.`;
             } else {
                 mensaje = `¿Deseas eliminar el registro del propietario "${nombre}" (DUI: ${dui})?\n\n` +
                           `Esta acción no se puede deshacer.`;

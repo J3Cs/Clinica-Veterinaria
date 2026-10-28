@@ -144,10 +144,36 @@ class MascotaRepository {
     }
 
     /**
-     * Baja lógica de una mascota (BAJA-01, T-077).
+     * Baja lógica de una mascota y cancelación automática de sus citas programadas (BAJA-01, T-077).
      */
     public function desactivar(int $id): bool {
         return $this->model->desactivar($id);
+    }
+
+    /**
+     * Cancela automáticamente las citas en estado 'Programada' de una mascota.
+     */
+    public function cancelarCitasProgramadas(
+        int $idMascota,
+        string $motivo = 'Cancelada automáticamente por desactivación de la mascota'
+    ): int {
+        if (method_exists($this->model, 'cancelarCitasProgramadas')) {
+            return $this->model->cancelarCitasProgramadas($idMascota, $motivo);
+        }
+        return 0;
+    }
+
+    /**
+     * Cancela automáticamente las citas en estado 'Programada' de las mascotas de un propietario.
+     */
+    public function cancelarCitasProgramadasPorPropietario(
+        int $idPropietario,
+        string $motivo = 'Cancelada automáticamente por desactivación del propietario'
+    ): int {
+        if (method_exists($this->model, 'cancelarCitasProgramadasPorPropietario')) {
+            return $this->model->cancelarCitasProgramadasPorPropietario($idPropietario, $motivo);
+        }
+        return 0;
     }
 
     /**
@@ -158,7 +184,8 @@ class MascotaRepository {
     }
 
     /**
-     * Desactiva todas las mascotas de un propietario cuando éste se da de baja lógicamente (T-077).
+     * Desactiva todas las mascotas de un propietario cuando éste se da de baja lógicamente
+     * y cancela automáticamente sus citas programadas (T-077).
      */
     public function desactivarPorPropietario(int $idPropietario): int {
         return $this->model->desactivarPorPropietario($idPropietario);

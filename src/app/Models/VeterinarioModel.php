@@ -190,6 +190,32 @@ class VeterinarioModel extends BaseModel {
     }
 
     /**
+     * Cancela automáticamente todas las citas en estado 'Programada' asociadas a un veterinario
+     * cuando su cuenta es desactivada (T-077, BAJA-01).
+     *
+     * @param int    $idVeterinario
+     * @param string $motivo
+     * @return int Cantidad de citas programadas canceladas automáticamente.
+     */
+    public function cancelarCitasProgramadas(
+        int $idVeterinario,
+        string $motivo = 'Cancelada automáticamente por desactivación del veterinario'
+    ): int {
+        $stmt = $this->db->prepare(
+            "UPDATE citas
+                SET estado = 'Cancelada',
+                    motivo_cancelacion = COALESCE(motivo_cancelacion, :motivo)
+              WHERE id_veterinario = :id_veterinario
+                AND estado = 'Programada'"
+        );
+        $stmt->execute([
+            ':id_veterinario' => $idVeterinario,
+            ':motivo'         => $motivo,
+        ]);
+        return $stmt->rowCount();
+    }
+
+    /**
      * Elimina físicamente la fila de `veterinarios` (solo cuando no tiene citas ni consultas — T-077).
      */
     public function delete(int $idVeterinario): bool {

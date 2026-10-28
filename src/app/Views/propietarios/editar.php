@@ -298,7 +298,7 @@ $valDireccion = $oldData['direccion']       ?? $propietario['direccion']       ?
                         <h4>Desactivar Propietario</h4>
                         <p class="text-muted">
                             Este propietario tiene <strong><?= $mascotasTotal ?> mascota(s)</strong> y <strong><?= $citasTotal ?> cita(s)</strong> registradas.
-                            Si lo desactivas, dejará de aparecer en los listados activos pero todo su historial médico se conservará.
+                            Si lo desactivas, sus mascotas pasarán a estado inactivo, sus citas programadas pendientes se cancelarán automáticamente y todo su historial médico se conservará.
                         </p>
                     <?php else: ?>
                         <h4>Eliminar Registro de Propietario</h4>

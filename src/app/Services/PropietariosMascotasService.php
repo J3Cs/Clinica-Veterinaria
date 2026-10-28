@@ -246,17 +246,28 @@ class PropietariosMascotasService {
         $tieneDependencias = $tieneMascotas || !empty($relaciones['tiene_dependencias']);
 
         if ($tieneDependencias) {
+            $citasProgramadasPrevias = (int) ($relaciones['citas_programadas'] ?? 0);
             $this->propietarioRepo->desactivar($idPropietario);
             $this->mascotaRepo->desactivarPorPropietario($idPropietario);
+            $relacionesActualizadas = $this->propietarioRepo->obtenerRelaciones($idPropietario);
 
-            return [
-                'success'    => true,
-                'tipo_baja'  => 'logica',
-                'message'    => sprintf(
+            $mensaje = $citasProgramadasPrevias > 0
+                ? sprintf(
+                    'El propietario «%s» fue desactivado junto con sus mascotas asociadas y se cancelaron automáticamente %d cita(s) programada(s). Su historial clínico se conserva en el sistema.',
+                    (string) $propietario['nombre_completo'],
+                    $citasProgramadasPrevias
+                )
+                : sprintf(
                     'El propietario «%s» fue desactivado junto con sus mascotas asociadas. Su historial de citas y consultas se conserva en el sistema.',
                     (string) $propietario['nombre_completo']
-                ),
-                'relaciones' => $relaciones,
+                );
+
+            return [
+                'success'          => true,
+                'tipo_baja'        => 'logica',
+                'citas_canceladas' => $citasProgramadasPrevias,
+                'message'          => $mensaje,
+                'relaciones'       => $relacionesActualizadas,
             ];
         }
 
@@ -603,16 +614,27 @@ class PropietariosMascotasService {
             || (int)($mascota['historial_total'] ?? 0) > 0;
 
         if ($tieneDependencias) {
+            $citasProgramadasPrevias = (int) ($relaciones['citas_programadas'] ?? ($mascota['citas_programadas'] ?? 0));
             $this->mascotaRepo->desactivar($idMascota);
+            $relacionesActualizadas = $this->mascotaRepo->obtenerRelaciones($idMascota);
 
-            return [
-                'success'    => true,
-                'tipo_baja'  => 'logica',
-                'message'    => sprintf(
+            $mensaje = $citasProgramadasPrevias > 0
+                ? sprintf(
+                    'La mascota «%s» fue desactivada y se cancelaron automáticamente %d cita(s) programada(s). Su historial clínico se conserva en el sistema.',
+                    (string) $mascota['nombre'],
+                    $citasProgramadasPrevias
+                )
+                : sprintf(
                     'La mascota «%s» fue desactivada. Su historial de citas y consultas clínicas se conserva en el sistema.',
                     (string) $mascota['nombre']
-                ),
-                'relaciones' => $relaciones,
+                );
+
+            return [
+                'success'          => true,
+                'tipo_baja'        => 'logica',
+                'citas_canceladas' => $citasProgramadasPrevias,
+                'message'          => $mensaje,
+                'relaciones'       => $relacionesActualizadas,
             ];
         }
 

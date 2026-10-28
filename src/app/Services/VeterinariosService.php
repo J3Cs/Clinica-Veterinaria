@@ -173,17 +173,29 @@ class VeterinariosService {
             || (int)($vet['consultas_total'] ?? 0) > 0;
 
         if ($tieneDependencias) {
+            $citasProgramadasPrevias = (int) ($relaciones['citas_programadas'] ?? 0);
+            $this->vetRepo->cancelarCitasProgramadas($idVeterinario);
             $this->vetRepo->desactivar($idUsuario);
             $this->usuarioRepo->desactivar($idUsuario);
+            $relacionesActualizadas = $this->vetRepo->obtenerRelaciones($idVeterinario);
 
-            return [
-                'success'    => true,
-                'tipo_baja'  => 'logica',
-                'message'    => sprintf(
+            $mensaje = $citasProgramadasPrevias > 0
+                ? sprintf(
+                    'La cuenta del veterinario «%s» fue desactivada y se cancelaron automáticamente %d cita(s) programada(s). Su historial clínico se conserva en el sistema.',
+                    (string) $vet['nombre'],
+                    $citasProgramadasPrevias
+                )
+                : sprintf(
                     'La cuenta del veterinario «%s» fue desactivada y su historial de citas y consultas se conserva en el sistema.',
                     (string) $vet['nombre']
-                ),
-                'relaciones' => $relaciones,
+                );
+
+            return [
+                'success'          => true,
+                'tipo_baja'        => 'logica',
+                'citas_canceladas' => $citasProgramadasPrevias,
+                'message'          => $mensaje,
+                'relaciones'       => $relacionesActualizadas,
             ];
         }
 

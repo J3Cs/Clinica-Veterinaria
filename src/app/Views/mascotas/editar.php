@@ -403,7 +403,7 @@ $valCaracteristicas = $oldData['caracteristicas_relevantes'] ?? $mascota['caract
                         <h4>Desactivar Mascota</h4>
                         <p class="text-muted">
                             Esta mascota tiene <strong><?= $citasTotal ?> cita(s)</strong>, <strong><?= $consultasTotal ?> consulta(s)</strong> y <strong><?= $historialTotal ?> antecedente(s)</strong> registrados.
-                            Si la desactivas, dejará de aparecer como activa pero conservará todo su expediente médico.
+                            Si la desactivas, sus citas programadas pendientes se cancelarán automáticamente y se conservará todo su expediente médico.
                         </p>
                     <?php else: ?>
                         <h4>Eliminar Registro de Mascota</h4>

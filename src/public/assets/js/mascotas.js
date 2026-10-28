@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const historial = selectedPetRow.getAttribute('data-historial') || '0';
             const msg = `¿Deseas desactivar a la mascota "${nombre}"?\n\n` +
                         `Tiene ${citas} cita(s), ${consultas} consulta(s) y ${historial} antecedente(s) registrados.\n` +
-                        `La mascota quedará inactiva, pero su historial médico se conservará.`;
+                        `Sus citas programadas pendientes se cancelarán automáticamente y su historial médico se conservará.`;
             if (window.confirm(msg)) {
                 if (inputBajaAccion) inputBajaAccion.value = 'baja';
                 formBaja.submit();
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (tieneDep) {
                 mensaje = `¿Deseas desactivar a la mascota "${nombre}"?\n\n` +
                           `Tiene ${citas} cita(s), ${consultas} consulta(s) y ${historial} antecedente(s) registrados.\n` +
-                          `La mascota quedará inactiva, pero su historial médico se conservará.`;
+                          `Sus citas programadas pendientes se cancelarán automáticamente y su historial médico se conservará.`;
             } else {
                 mensaje = `¿Deseas eliminar el registro de la mascota "${nombre}"?\n\n` +
                           `Esta acción no se puede deshacer.`;
