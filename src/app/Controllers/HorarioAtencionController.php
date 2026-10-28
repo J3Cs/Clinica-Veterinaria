@@ -1,26 +1,26 @@
 <?php
 namespace App\Controllers;
 
-use App\Services\HorariosServicio;
+use App\Services\HorariosService;
 use App\Repositories\VeterinarioRepository;
 use App\Middlewares\AuthMiddleware;
 use App\Middlewares\CsrfMiddleware;
 
 /**
- * HorarioAtencionControlador — US-11 (T-073), ARQ-01, ACC-01, SEC-01
+ * HorarioAtencionController — US-11 (T-073), ARQ-01, ACC-01, SEC-01
  * Controlador para la gestión y asignación de horarios de atención médica.
  * Todas las acciones requieren rol Administrador (ACC-01).
  */
-class HorarioAtencionControlador {
+class HorarioAtencionController {
 
-    private HorariosServicio $service;
+    private HorariosService $service;
     private VeterinarioRepository $vetRepo;
 
     public function __construct(
-        ?HorariosServicio $service = null,
+        ?HorariosService $service = null,
         ?VeterinarioRepository $vetRepo = null
     ) {
-        $this->service = $service ?? new HorariosServicio();
+        $this->service = $service ?? new HorariosService();
         $this->vetRepo = $vetRepo ?? new VeterinarioRepository();
     }
 
@@ -179,7 +179,7 @@ class HorarioAtencionControlador {
     }
 
     // ────────────────────────────────────────────────────────────── //
-    //  POST /horarios/eliminar — Eliminación física controlada
+    //  POST /horarios/eliminar — Eliminación controlada
     // ────────────────────────────────────────────────────────────── //
 
     public function delete(): void {

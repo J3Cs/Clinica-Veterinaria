@@ -5,6 +5,28 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-12] — 2026-10-28 — Búsqueda, Mantenimiento y Política de Baja (T-076 a T-081, T-090, RF12, UNI-01, DAT-01, BAJA-01, ACC-01, SEC-01, UI-01)
+
+### Added
+- **`database/migrations/004_baja_logica.sql`** — Migración idempotente que asegura el campo `activo TINYINT(1) NOT NULL DEFAULT 1` e índices de estado activo en `propietarios` y `mascotas` (T-090).
+- **`PropietariosMascotasService`** — Búsqueda parametrizada (`buscarPropietarios`, `buscarMascotas`), carga de expediente con relaciones (`obtenerPropietarioConRelaciones`, `obtenerMascotaConRelaciones`), actualización validando unicidad de DUI (`UNI-01`) e integridad de propietario activo (`DAT-01`), y política definitiva de baja (`darDeBajaPropietario`, `darDeBajaMascota`, `reactivarPropietario`, `reactivarMascota`): desactivación lógica cuando existen relaciones clínicas/citas (desactivando también las mascotas del propietario dado de baja) y eliminación física (`DELETE`) únicamente cuando no existen dependencias (T-077, BAJA-01).
+- **`VeterinariosService`** y **`VeterinarioController`** — Edición y política de baja de médicos veterinarios: desactivación lógica de cuenta (`usuarios.activo = 0`, impidiendo iniciar sesión en `AuthService`) cuando existen citas o consultas asociadas, o eliminación física cuando no tiene dependencias (T-077, T-078).
+- **`Views/propietarios/listar.php`**, **`Views/propietarios/editar.php`**, **`Views/mascotas/listar.php`** y **`Views/mascotas/editar.php`** — Directorios con buscador, filtro de inactivos, contadores de relaciones, estados vacíos amigables y vistas de edición/expediente clínico con panel de baja controlada (T-079, UI-01).
+- **`public/assets/css/modulos.css`**, **`public/assets/js/propietarios.js`** y **`public/assets/js/mascotas.js`** — Estilos consistentes de directorios/expedientes y confirmación nativa `window.confirm` antes de ejecutar una baja o reactivación (T-080).
+- **`pruebas/test_mantenimiento.php`** (12 pruebas automatizadas con `assert()` nativo e integración PDO real con rollback al 100%) y **`pruebas/manuales/RF12-mantenimiento.md`** (12 casos de prueba manuales) (T-081).
+- **`docs/adr/ADR-010-mantenimiento-y-politica-de-baja.md`** — Decisión de arquitectura sobre búsqueda, mantenimiento y política de baja lógica/física.
+
+### Changed
+- **`PropietarioModel` / `PropietarioRepository`** y **`MascotaModel` / `MascotaRepository`** — Ampliados con `update()`, `search()`, `contarRelaciones()`, `obtenerRelacionesClinicas()`, `desactivar()`, `activar()`, `desactivarPorPropietario()` y `delete()`, excluyendo registros inactivos por defecto en consultas operativas (T-076, T-090).
+- **`VeterinarioModel` / `VeterinarioRepository`** y **`UsuarioModel` / `UsuarioRepository`** — Ampliados con consultas de relaciones clínicas (`citas`, `consultas_veterinarias`, `horarios_atencion`), actualización de datos profesionales y activación/desactivación de cuenta (T-076, T-077).
+- **`PropietarioController`** y **`MascotaController`** — Incorporadas acciones `edit`, `update`, `baja` y `delete` protegidas con rol `administrador` y validación CSRF, preservando citas e historiales (T-078).
+- **`public/index.php`** — Registradas rutas `/propietarios/editar`, `/propietarios/baja`, `/propietarios/eliminar`, `/mascotas/editar`, `/mascotas/baja`, `/mascotas/eliminar`, `/veterinarios/editar`, `/veterinarios/baja` y `/veterinarios/eliminar` (T-078).
+
+### Decisions
+- Ver `docs/adr/ADR-010-mantenimiento-y-politica-de-baja.md`
+
+---
+
 ## [ACC-01] — 2026-10-26 — Usuarios de los veterinarios y menú según el rol
 
 ### Added

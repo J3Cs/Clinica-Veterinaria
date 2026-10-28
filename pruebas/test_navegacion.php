@@ -21,7 +21,9 @@ echo " Clinica Veterinaria -- Suite de Pruebas: ACC-01\n";
 echo " Modulo: Menu y funciones segun el rol\n";
 echo "========================================================\n\n";
 
-require __DIR__ . '/../src/app/Config/Navegacion.php';
+$srcBase = is_dir(__DIR__ . '/../src/app') ? __DIR__ . '/../src' : '/var/www/html';
+
+require $srcBase . '/app/Config/Navegacion.php';
 
 use App\Config\Navegacion;
 
@@ -50,10 +52,11 @@ function urls(?string $rol): array {
 
 /** Dibuja el menú compartido para una sesión dada y devuelve el HTML. */
 function dibujarMenu(array $sesion, string $activo = ''): string {
+    global $srcBase;
     $_SESSION = $sesion;
     $navActivo = $activo;
     ob_start();
-    include __DIR__ . '/../src/app/Views/partials/navbar.php';
+    include $srcBase . '/app/Views/partials/navbar.php';
     return (string) ob_get_clean();
 }
 
@@ -65,7 +68,9 @@ function hrefs(string $html): array {
 
 // Rutas que SOLO puede usar el administrador (ver los requireRole de los controladores).
 const SOLO_ADMIN = [
-    '/admin/dashboard', '/propietarios/crear', '/mascotas/crear',
+    '/admin/dashboard',
+    '/propietarios/crear', '/propietarios/editar',
+    '/mascotas/crear', '/mascotas/editar',
     '/citas', '/citas/crear', '/citas/cancelar',
     '/servicios', '/servicios/crear', '/servicios/editar',
     '/horarios', '/horarios/crear', '/horarios/editar',
@@ -127,8 +132,8 @@ runTest('Cada rol conocido tiene menu, inicio y sin enlaces repetidos', function
     }
 });
 
-runTest('Todas las opciones del menu y los inicios existen como rutas GET en index.php', function () {
-    $index = (string) file_get_contents(__DIR__ . '/../src/public/index.php');
+runTest('Todas las opciones del menu y los inicios existen como rutas GET en index.php', function () use ($srcBase) {
+    $index = (string) file_get_contents($srcBase . '/public/index.php');
     preg_match_all('/\$router->get\(\'([^\']+)\'/', $index, $m);
     $rutas = $m[1];
     assert(count($rutas) > 10, 'Se leyeron las rutas');
@@ -172,8 +177,8 @@ runTest('Menu compartido: el nombre se escapa (sin HTML inyectado) y un rol sin 
     assert(hrefs($vacio) === ['/logout'], 'Sin sesion: solo cerrar sesion');
 });
 
-runTest('Ninguna pantalla trae su propio menu: todas usan el parcial compartido', function () {
-    $raiz = __DIR__ . '/../src/app/Views';
+runTest('Ninguna pantalla trae su propio menu: todas usan el parcial compartido', function () use ($srcBase) {
+    $raiz = $srcBase . '/app/Views';
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($raiz, FilesystemIterator::SKIP_DOTS));
     $conMenuPropio = [];
     $usanParcial = [];
@@ -193,7 +198,8 @@ runTest('Ninguna pantalla trae su propio menu: todas usan el parcial compartido'
     sort($usanParcial);
     $esperadas = ['citas/confirmar_cancelacion.php', 'citas/listar.php', 'consultas/crear.php', 'dashboard/admin.php',
                   'dashboard/index.php', 'dashboard/veterinario.php', 'horarios/formulario.php', 'horarios/listar.php',
-                  'mascotas/crear.php', 'mascotas/index.php', 'propietarios/crear.php', 'propietarios/index.php',
+                  'mascotas/crear.php', 'mascotas/editar.php', 'mascotas/listar.php',
+                  'propietarios/crear.php', 'propietarios/editar.php', 'propietarios/listar.php',
                   'servicios/formulario.php', 'servicios/listar.php'];
     assert($usanParcial === $esperadas, 'Usan el parcial: ' . implode(', ', $usanParcial));
 });

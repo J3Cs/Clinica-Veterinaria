@@ -5,8 +5,9 @@ use App\Repositories\PropietarioRepository;
 use App\Repositories\MascotaRepository;
 
 /**
- * PropietariosMascotasService — US-02, US-03, ARQ-01, UNI-01, DAT-01, SEC-01, BAJA-01
- * Contiene todas las reglas de negocio para la gestión de propietarios y sus mascotas.
+ * PropietariosMascotasService — US-02, US-03, US-12 (T-076, T-077, T-090), ARQ-01, UNI-01, DAT-01, SEC-01, BAJA-01
+ * Contiene todas las reglas de negocio para el alta, búsqueda, edición y política de baja
+ * (baja lógica con dependencias vs eliminación física sin dependencias) de propietarios y mascotas.
  */
 class PropietariosMascotasService {
 
@@ -22,7 +23,7 @@ class PropietariosMascotasService {
     }
 
     // ────────────────────────────────────────────────────────────────── //
-    //  SECCIÓN: Reglas de Propietarios (US-02, UNI-01)
+    //  SECCIÓN: Reglas de Propietarios (US-02, US-12, UNI-01, BAJA-01)
     // ────────────────────────────────────────────────────────────────── //
 
     /**
@@ -35,10 +36,8 @@ class PropietariosMascotasService {
      */
     public function normalizarDui(string $dui): string {
         $limpio = trim($dui);
-        // Quitar espacios interiores
         $limpio = str_replace(' ', '', $limpio);
 
-        // Si son 9 dígitos continuos, insertar guion antes del último dígito
         if (preg_match('/^\d{9}$/', $limpio)) {
             return substr($limpio, 0, 8) . '-' . substr($limpio, 8, 1);
         }
@@ -58,12 +57,13 @@ class PropietariosMascotasService {
     }
 
     /**
-     * Registra un nuevo propietario aplicando todas las reglas de negocio (T-018, UNI-01).
+     * Valida los campos de un propietario para registro o edición.
      *
-     * @param array{nombre_completo?: string, dui?: string, direccion?: ?string, telefono?: ?string, correo?: ?string} $datos
-     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     * @param array<string,mixed> $datos
+     * @param int|null            $excludeId ID del propietario actual en caso de edición
+     * @return array{errors: array<string,string>, clean: array{dui: string, nombre_completo: string, direccion: ?string, telefono: ?string, correo: ?string}}
      */
-    public function registrarPropietario(array $datos): array {
+    private function validarCamposPropietario(array $datos, ?int $excludeId = null): array {
         $errors = [];
 
         // 1. Validación de nombre completo (obligatorio)
@@ -84,7 +84,7 @@ class PropietariosMascotasService {
             $errors['dui'] = 'El número de DUI es obligatorio.';
         } elseif (!$this->validarDui($dui)) {
             $errors['dui'] = 'El formato del DUI no es válido. Debe ser ########-# (ej. 12345678-9).';
-        } elseif ($this->propietarioRepo->isDuiRegistered($dui)) {
+        } elseif ($this->propietarioRepo->isDuiRegistered($dui, $excludeId)) {
             $errors['dui'] = 'El número de DUI ya se encuentra registrado en el sistema.';
         }
 
@@ -114,7 +114,29 @@ class PropietariosMascotasService {
         $direccion = trim((string)($datos['direccion'] ?? ''));
         $direccion = ($direccion !== '') ? $direccion : null;
 
-        // Si existen errores, retornar sin persistir
+        return [
+            'errors' => $errors,
+            'clean'  => [
+                'dui'             => $dui,
+                'nombre_completo' => $nombreCompleto,
+                'direccion'       => $direccion,
+                'telefono'        => $telefono,
+                'correo'          => $correo,
+            ],
+        ];
+    }
+
+    /**
+     * Registra un nuevo propietario aplicando todas las reglas de negocio (T-018, UNI-01).
+     *
+     * @param array{nombre_completo?: string, dui?: string, direccion?: ?string, telefono?: ?string, correo?: ?string} $datos
+     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     */
+    public function registrarPropietario(array $datos): array {
+        $validacion = $this->validarCamposPropietario($datos, null);
+        $errors = $validacion['errors'];
+        $clean  = $validacion['clean'];
+
         if (!empty($errors)) {
             return [
                 'success' => false,
@@ -124,13 +146,12 @@ class PropietariosMascotasService {
             ];
         }
 
-        // Persistir en base de datos
         $idPropietario = $this->propietarioRepo->create([
-            'dui'             => $dui,
-            'nombre_completo' => $nombreCompleto,
-            'direccion'       => $direccion,
-            'telefono'        => $telefono,
-            'correo'          => $correo,
+            'dui'             => $clean['dui'],
+            'nombre_completo' => $clean['nombre_completo'],
+            'direccion'       => $clean['direccion'],
+            'telefono'        => $clean['telefono'],
+            'correo'          => $clean['correo'],
             'activo'          => 1,
         ]);
 
@@ -139,6 +160,147 @@ class PropietariosMascotasService {
             'message' => 'Propietario registrado exitosamente.',
             'errors'  => [],
             'id'      => $idPropietario,
+        ];
+    }
+
+    /**
+     * Actualiza los datos de contacto o DUI de un propietario existente (T-076, T-077, UNI-01).
+     *
+     * @param int   $idPropietario
+     * @param array $datos
+     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     */
+    public function actualizarPropietario(int $idPropietario, array $datos): array {
+        if ($idPropietario <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Identificador de propietario no válido.',
+                'errors'  => [],
+                'id'      => null,
+            ];
+        }
+
+        $existente = $this->propietarioRepo->findById($idPropietario);
+        if (!$existente) {
+            return [
+                'success' => false,
+                'message' => 'El propietario indicado no existe en el sistema.',
+                'errors'  => [],
+                'id'      => null,
+            ];
+        }
+
+        $validacion = $this->validarCamposPropietario($datos, $idPropietario);
+        $errors = $validacion['errors'];
+        $clean  = $validacion['clean'];
+
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'message' => 'Por favor corrige los errores señalados en el formulario.',
+                'errors'  => $errors,
+                'id'      => $idPropietario,
+            ];
+        }
+
+        $this->propietarioRepo->update($idPropietario, $clean);
+
+        return [
+            'success' => true,
+            'message' => 'Datos del propietario actualizados exitosamente.',
+            'errors'  => [],
+            'id'      => $idPropietario,
+        ];
+    }
+
+    /**
+     * Aplica la política definitiva de baja para un propietario (T-077, BAJA-01):
+     * - Si existen mascotas asociadas o relaciones clínicas/citas: realiza BAJA LÓGICA (activo = 0)
+     *   del propietario y desactiva sus mascotas asociadas, preservando todo el historial y citas.
+     * - Si NO existen dependencias: realiza ELIMINACIÓN FÍSICA (DELETE).
+     *
+     * @param int $idPropietario
+     * @return array{success: bool, tipo_baja: ?string, message: string, relaciones?: array<string,mixed>}
+     */
+    public function darDeBajaPropietario(int $idPropietario): array {
+        if ($idPropietario <= 0) {
+            return [
+                'success'   => false,
+                'tipo_baja' => null,
+                'message'   => 'Identificador de propietario no válido.',
+            ];
+        }
+
+        $propietario = $this->propietarioRepo->findById($idPropietario);
+        if (!$propietario) {
+            return [
+                'success'   => false,
+                'tipo_baja' => null,
+                'message'   => 'El propietario indicado no existe en el sistema.',
+            ];
+        }
+
+        $relaciones = $this->propietarioRepo->obtenerRelaciones($idPropietario);
+        $mascotasAsociadas = $this->mascotaRepo->listByPropietario($idPropietario, false);
+        $tieneMascotas = count($mascotasAsociadas) > 0 || (int)($relaciones['mascotas_total'] ?? 0) > 0;
+        $tieneDependencias = $tieneMascotas || !empty($relaciones['tiene_dependencias']);
+
+        if ($tieneDependencias) {
+            $this->propietarioRepo->desactivar($idPropietario);
+            $this->mascotaRepo->desactivarPorPropietario($idPropietario);
+
+            return [
+                'success'    => true,
+                'tipo_baja'  => 'logica',
+                'message'    => sprintf(
+                    'El propietario «%s» fue desactivado junto con sus mascotas asociadas. Su historial de citas y consultas se conserva en el sistema.',
+                    (string) $propietario['nombre_completo']
+                ),
+                'relaciones' => $relaciones,
+            ];
+        }
+
+        $this->propietarioRepo->delete($idPropietario);
+
+        return [
+            'success'    => true,
+            'tipo_baja'  => 'fisica',
+            'message'    => sprintf(
+                'El registro del propietario «%s» fue eliminado correctamente.',
+                (string) $propietario['nombre_completo']
+            ),
+            'relaciones' => $relaciones,
+        ];
+    }
+
+    /**
+     * Alias de darDeBajaPropietario.
+     */
+    public function eliminarPropietario(int $idPropietario): array {
+        return $this->darDeBajaPropietario($idPropietario);
+    }
+
+    /**
+     * Reactiva a un propietario previamente desactivado.
+     *
+     * @param int $idPropietario
+     * @return array{success: bool, message: string}
+     */
+    public function reactivarPropietario(int $idPropietario): array {
+        if ($idPropietario <= 0) {
+            return ['success' => false, 'message' => 'Identificador de propietario no válido.'];
+        }
+
+        $propietario = $this->propietarioRepo->findById($idPropietario);
+        if (!$propietario) {
+            return ['success' => false, 'message' => 'El propietario indicado no existe.'];
+        }
+
+        $this->propietarioRepo->activar($idPropietario);
+
+        return [
+            'success' => true,
+            'message' => sprintf('Propietario «%s» reactivado exitosamente.', (string) $propietario['nombre_completo']),
         ];
     }
 
@@ -153,6 +315,26 @@ class PropietariosMascotasService {
     }
 
     /**
+     * Consulta un propietario junto con sus mascotas y el resumen de sus relaciones clínicas (T-076).
+     *
+     * @param int $id
+     * @return array<string,mixed>|null
+     */
+    public function obtenerPropietarioConRelaciones(int $id): ?array {
+        if ($id <= 0) {
+            return null;
+        }
+        $propietario = $this->propietarioRepo->findById($id);
+        if (!$propietario) {
+            return null;
+        }
+
+        $propietario['mascotas']   = $this->mascotaRepo->listByPropietario($id, false);
+        $propietario['relaciones'] = $this->propietarioRepo->obtenerRelaciones($id);
+        return $propietario;
+    }
+
+    /**
      * Consulta un propietario por su DUI.
      *
      * @param string $dui
@@ -164,7 +346,7 @@ class PropietariosMascotasService {
     }
 
     /**
-     * Lista todos los propietarios activos.
+     * Lista todos los propietarios (por defecto excluye inactivos — T-090).
      *
      * @param bool $soloActivos
      * @return array<array<string,mixed>>
@@ -173,25 +355,35 @@ class PropietariosMascotasService {
         return $this->propietarioRepo->listAll($soloActivos);
     }
 
+    /**
+     * Busca propietarios por nombre, DUI, teléfono o correo (T-076, T-090).
+     *
+     * @param string|null $termino
+     * @param bool        $soloActivos
+     * @return array<array<string,mixed>>
+     */
+    public function buscarPropietarios(?string $termino = null, bool $soloActivos = true): array {
+        $limpio = trim((string) $termino);
+        if ($limpio === '') {
+            return $this->propietarioRepo->listAll($soloActivos);
+        }
+        if (preg_match('/^\d{9}$/', str_replace(' ', '', $limpio))) {
+            $limpio = $this->normalizarDui($limpio);
+        }
+        return $this->propietarioRepo->search($limpio, $soloActivos);
+    }
+
     // ────────────────────────────────────────────────────────────────── //
-    //  SECCIÓN: Reglas de Mascotas (US-03, DAT-01, BAJA-01)
+    //  SECCIÓN: Reglas de Mascotas (US-03, US-12, DAT-01, BAJA-01)
     // ────────────────────────────────────────────────────────────────── //
 
     /**
-     * Registra una nueva mascota vinculada a un propietario existente (US-03, DAT-01).
+     * Valida los campos de una mascota para registro o edición.
      *
-     * @param array{
-     *     id_propietario?: mixed,
-     *     nombre?: string,
-     *     especie?: string,
-     *     raza?: string,
-     *     sexo?: string,
-     *     fecha_nacimiento?: ?string,
-     *     caracteristicas_relevantes?: ?string
-     * } $datos
-     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     * @param array<string,mixed> $datos
+     * @return array{errors: array<string,string>, clean: array{id_propietario: int, nombre: string, especie: string, raza: string, sexo: string, fecha_nacimiento: ?string, caracteristicas_relevantes: ?string}}
      */
-    public function registrarMascota(array $datos): array {
+    private function validarCamposMascota(array $datos): array {
         $errors = [];
 
         // 1. Validación de Integridad Referencial: Propietario (DAT-01)
@@ -266,7 +458,39 @@ class PropietariosMascotasService {
         $caracteristicas = trim((string)($datos['caracteristicas_relevantes'] ?? ''));
         $caracteristicas = ($caracteristicas !== '') ? $caracteristicas : null;
 
-        // Si existen errores, abortar persistencia
+        return [
+            'errors' => $errors,
+            'clean'  => [
+                'id_propietario'             => $idPropietario,
+                'nombre'                     => $nombre,
+                'especie'                    => $especie,
+                'raza'                       => $raza,
+                'sexo'                       => $sexo,
+                'fecha_nacimiento'           => $fechaNacimiento,
+                'caracteristicas_relevantes' => $caracteristicas,
+            ],
+        ];
+    }
+
+    /**
+     * Registra una nueva mascota vinculada a un propietario existente (US-03, DAT-01).
+     *
+     * @param array{
+     *     id_propietario?: mixed,
+     *     nombre?: string,
+     *     especie?: string,
+     *     raza?: string,
+     *     sexo?: string,
+     *     fecha_nacimiento?: ?string,
+     *     caracteristicas_relevantes?: ?string
+     * } $datos
+     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     */
+    public function registrarMascota(array $datos): array {
+        $validacion = $this->validarCamposMascota($datos);
+        $errors = $validacion['errors'];
+        $clean  = $validacion['clean'];
+
         if (!empty($errors)) {
             return [
                 'success' => false,
@@ -276,15 +500,14 @@ class PropietariosMascotasService {
             ];
         }
 
-        // Persistir en base de datos
         $idMascota = $this->mascotaRepo->create([
-            'id_propietario'             => $idPropietario,
-            'nombre'                     => $nombre,
-            'especie'                    => $especie,
-            'raza'                       => $raza,
-            'sexo'                       => $sexo,
-            'fecha_nacimiento'           => $fechaNacimiento,
-            'caracteristicas_relevantes' => $caracteristicas,
+            'id_propietario'             => $clean['id_propietario'],
+            'nombre'                     => $clean['nombre'],
+            'especie'                    => $clean['especie'],
+            'raza'                       => $clean['raza'],
+            'sexo'                       => $clean['sexo'],
+            'fecha_nacimiento'           => $clean['fecha_nacimiento'],
+            'caracteristicas_relevantes' => $clean['caracteristicas_relevantes'],
             'activo'                     => 1,
         ]);
 
@@ -297,13 +520,181 @@ class PropietariosMascotasService {
     }
 
     /**
-     * Retorna todas las mascotas registradas con datos de su propietario.
+     * Actualiza los datos de una mascota existente y su propietario responsable (T-076, T-077, DAT-01).
+     *
+     * @param int   $idMascota
+     * @param array $datos
+     * @return array{success: bool, message: string, errors: array<string,string>, id: ?int}
+     */
+    public function actualizarMascota(int $idMascota, array $datos): array {
+        if ($idMascota <= 0) {
+            return [
+                'success' => false,
+                'message' => 'Identificador de mascota no válido.',
+                'errors'  => [],
+                'id'      => null,
+            ];
+        }
+
+        $existente = $this->mascotaRepo->findById($idMascota);
+        if (!$existente) {
+            return [
+                'success' => false,
+                'message' => 'La mascota indicada no existe en el sistema.',
+                'errors'  => [],
+                'id'      => null,
+            ];
+        }
+
+        $validacion = $this->validarCamposMascota($datos);
+        $errors = $validacion['errors'];
+        $clean  = $validacion['clean'];
+
+        if (!empty($errors)) {
+            return [
+                'success' => false,
+                'message' => 'Por favor corrige los errores señalados en el formulario.',
+                'errors'  => $errors,
+                'id'      => $idMascota,
+            ];
+        }
+
+        $this->mascotaRepo->update($idMascota, $clean);
+
+        return [
+            'success' => true,
+            'message' => 'Expediente de la mascota actualizado exitosamente.',
+            'errors'  => [],
+            'id'      => $idMascota,
+        ];
+    }
+
+    /**
+     * Aplica la política definitiva de baja para una mascota (T-077, BAJA-01):
+     * - Si posee citas, consultas veterinarias o antecedentes en historial_mascota:
+     *   realiza BAJA LÓGICA (activo = 0), preservando intactos los datos clínicos.
+     * - Si NO posee ninguna dependencia clínica: realiza ELIMINACIÓN FÍSICA (DELETE).
+     *
+     * @param int $idMascota
+     * @return array{success: bool, tipo_baja: ?string, message: string, relaciones?: array<string,mixed>}
+     */
+    public function darDeBajaMascota(int $idMascota): array {
+        if ($idMascota <= 0) {
+            return [
+                'success'   => false,
+                'tipo_baja' => null,
+                'message'   => 'Identificador de mascota no válido.',
+            ];
+        }
+
+        $mascota = $this->mascotaRepo->findById($idMascota);
+        if (!$mascota) {
+            return [
+                'success'   => false,
+                'tipo_baja' => null,
+                'message'   => 'La mascota indicada no existe en el sistema.',
+            ];
+        }
+
+        $relaciones = $this->mascotaRepo->obtenerRelaciones($idMascota);
+        $tieneDependencias = !empty($relaciones['tiene_dependencias'])
+            || (int)($mascota['citas_total'] ?? 0) > 0
+            || (int)($mascota['consultas_total'] ?? 0) > 0
+            || (int)($mascota['historial_total'] ?? 0) > 0;
+
+        if ($tieneDependencias) {
+            $this->mascotaRepo->desactivar($idMascota);
+
+            return [
+                'success'    => true,
+                'tipo_baja'  => 'logica',
+                'message'    => sprintf(
+                    'La mascota «%s» fue desactivada. Su historial de citas y consultas clínicas se conserva en el sistema.',
+                    (string) $mascota['nombre']
+                ),
+                'relaciones' => $relaciones,
+            ];
+        }
+
+        $this->mascotaRepo->delete($idMascota);
+
+        return [
+            'success'    => true,
+            'tipo_baja'  => 'fisica',
+            'message'    => sprintf(
+                'El registro de la mascota «%s» fue eliminado correctamente.',
+                (string) $mascota['nombre']
+            ),
+            'relaciones' => $relaciones,
+        ];
+    }
+
+    /**
+     * Alias de darDeBajaMascota.
+     */
+    public function eliminarMascota(int $idMascota): array {
+        return $this->darDeBajaMascota($idMascota);
+    }
+
+    /**
+     * Reactiva una mascota previamente desactivada (siempre que su propietario esté activo — DAT-01).
+     *
+     * @param int $idMascota
+     * @return array{success: bool, message: string}
+     */
+    public function reactivarMascota(int $idMascota): array {
+        if ($idMascota <= 0) {
+            return ['success' => false, 'message' => 'Identificador de mascota no válido.'];
+        }
+
+        $mascota = $this->mascotaRepo->findById($idMascota);
+        if (!$mascota) {
+            return ['success' => false, 'message' => 'La mascota indicada no existe.'];
+        }
+
+        $propietario = $this->propietarioRepo->findById((int) $mascota['id_propietario']);
+        if (!$propietario || (int)($propietario['activo'] ?? 1) !== 1) {
+            return [
+                'success' => false,
+                'message' => 'No se puede reactivar la mascota porque su propietario se encuentra inactivo. Reactiva primero al propietario.',
+            ];
+        }
+
+        $this->mascotaRepo->activar($idMascota);
+
+        return [
+            'success' => true,
+            'message' => sprintf('Mascota «%s» reactivada exitosamente.', (string) $mascota['nombre']),
+        ];
+    }
+
+    /**
+     * Retorna todas las mascotas registradas con datos de su propietario (T-090).
      *
      * @param bool $soloActivos
      * @return array<array<string,mixed>>
      */
     public function listarMascotas(bool $soloActivos = true): array {
         return $this->mascotaRepo->listAll($soloActivos);
+    }
+
+    /**
+     * Busca mascotas por nombre, especie, raza, propietario o DUI (T-076, T-090).
+     *
+     * @param string|null $termino
+     * @param bool        $soloActivos
+     * @param int|null    $idPropietario
+     * @return array<array<string,mixed>>
+     */
+    public function buscarMascotas(?string $termino = null, bool $soloActivos = true, ?int $idPropietario = null): array {
+        $limpio = trim((string) $termino);
+        if ($limpio === '' && $idPropietario === null) {
+            return $this->mascotaRepo->listAll($soloActivos);
+        }
+        if ($limpio !== '' && preg_match('/^\d{9}$/', str_replace(' ', '', $limpio))) {
+            $limpio = $this->normalizarDui($limpio);
+        }
+        return $this->mascotaRepo->search($limpio, $soloActivos, $idPropietario);
     }
 
     /**
@@ -314,6 +705,19 @@ class PropietariosMascotasService {
      */
     public function obtenerMascotaPorId(int $id): ?array {
         return $this->mascotaRepo->findById($id);
+    }
+
+    /**
+     * Consulta una mascota con los datos de su propietario y todas sus relaciones clínicas (T-076).
+     *
+     * @param int $id
+     * @return array<string,mixed>|null
+     */
+    public function obtenerMascotaConRelaciones(int $id): ?array {
+        if ($id <= 0) {
+            return null;
+        }
+        return $this->mascotaRepo->findConRelaciones($id);
     }
 
     /**

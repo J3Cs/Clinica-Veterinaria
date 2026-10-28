@@ -333,13 +333,13 @@ $diasNombres = [
                 </div>
                 <div class="selection-buttons">
                     <button type="button" id="btn-edit-selected" class="btn-action-edit">
-                        ✏️ Editar Horario
+                        Editar Horario
                     </button>
                     <button type="button" id="btn-delete-selected" class="btn-action-delete">
-                        🗑️ Eliminar Horario
+                        Eliminar Horario
                     </button>
                     <button type="button" id="btn-cancel-selected" class="btn-action-cancel">
-                        ✕ Deseleccionar
+                        Deseleccionar
                     </button>
                 </div>
             </div>
