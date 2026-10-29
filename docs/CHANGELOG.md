@@ -28,7 +28,8 @@ Versiones alineadas con los Incrementos del proyecto.
 ## [US-09] — 2026-10-28 — Gestión de Veterinarios y Usuarios (T-059 a T-064, RF09, UNI-01, DAT-01, BAJA-01, ACC-01, SEC-01, UI-01)
 
 ### Added
-- **VeterinariosService::registrarVeterinario() y uscarVeterinarios()** — Alta de médico veterinario y su cuenta de usuario inicial (ol = 'veterinario'), validación de unicidad (usuario, correo, licencia_medica), cifrado de contraseña con PASSWORD_BCRYPT, cambio opcional de credenciales en edición y política de baja controlada documentada (T-061).
+- **VeterinariosService::registrarVeterinario() y uscarVeterinarios()** — Alta de médico veterinario y su cuenta de usuario inicial (
+ol = 'veterinario'), validación de unicidad (usuario, correo, licencia_medica), cifrado de contraseña con PASSWORD_BCRYPT, cambio opcional de credenciales en edición y política de baja controlada documentada (T-061).
 - **Views/veterinarios/listar.php**, **Views/veterinarios/crear.php** y **Views/veterinarios/editar.php** — Directorio con distinción de estado activo/inactivo, buscador, filtro de estado e insignias de relaciones; formulario de creación con cuenta inicial y vista de edición donde la contraseña solo se solicita al cambiar credenciales (T-063, UI-01).
 - **public/assets/js/veterinarios.js** — Selección interactiva de filas, confirmación window.confirm antes de desactivar/eliminar/reactivar personal médico y validación progresiva en cliente complementaria al servidor (T-064).
 - **pruebas/test_veterinarios.php** (12 pruebas automatizadas con ssert() nativo e integración PDO con rollback) y **pruebas/manuales/RF09-veterinarios.md** (12 casos de prueba manuales) (T-064).
@@ -85,6 +86,28 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ### Decisions
 - Ver `docs/adr/ADR-009-roles-y-menu-por-usuario.md`
+
+---
+
+## [US-07] — 2026-10-27 — Historial médico
+
+## Cambios incluidos
+- `src/app/Controllers/HistorialController.php`: nueva acción de consulta del historial; solo lectura y acceso limitado a veterinario/administrador.
+- `src/app/Views/historial/detalle.php`: vista independiente con datos de la mascota y eventos cronológicos.
+- `src/public/index.php`: ruta GET `/mascotas/historial?id=ID`.
+- `src/app/Views/mascotas/listar.php`: enlace **Ver historial médico** por mascota.
+- `src/app/Services/ConsultaService.php`: el límite predeterminado del historial consolidado sube de 10 a 200 eventos.
+
+## Uso
+Inicia sesión como veterinario o administrador, entra a **Mascotas** y pulsa **Ver historial médico**. También puedes abrir `/mascotas/historial?id=1`, sustituyendo `1` por el identificador real de la mascota.
+
+## Alcance y pendiente de datos
+El historial consolida `consultas_veterinarias` e `historial_mascota`, ordena los eventos por fecha y no duplica consultas, porque las consultas se leen directamente de `consultas_veterinarias`. Cada consulta queda filtrada por el `id_mascota` solicitado.
+
+**Importante:** la base de datos incluida en este ZIP no tiene tablas específicas para vacunas ni para medicamentos administrados como eventos independientes. El historial muestra el tratamiento y los servicios adicionales guardados en la consulta, pero para cumplir literalmente ese criterio hace falta definir e implementar tablas/relaciones de vacunas y medicamentos, o confirmar dónde se registran actualmente esos datos. No se inventaron tablas ni columnas que no existen en el proyecto.
+
+## Validación
+Se comprobó la sintaxis PHP de los archivos modificados/nuevos. La suite `pruebas/test_consultas.php` no se pudo completar en este entorno porque PHP no tiene habilitada la extensión `mbstring` (`mb_check_encoding()` indefinida); ejecutar las pruebas en el entorno normal del proyecto con esa extensión instalada.
 
 ---
 
