@@ -233,21 +233,152 @@ class CitaService {
     }
 
     // ────────────────────────────────────────────────────────────────── //
-    //  Listado y cancelación (US-05)
+    //  Listado y cancelación (US-05, US-08 / T-054, T-055)
     // ────────────────────────────────────────────────────────────────── //
 
     /**
-     * Citas para el listado. Un estado desconocido se trata como el predeterminado.
+     * Valida estados permitidos, fechas y valores de filtro antes de consultar (T-055, RF08).
+     * Solo se admiten Programada, Atendida o Cancelada (o Todas/vacío para ver todas).
+     * Fechas inválidas o rangos invertidos producen mensajes claros.
      *
-     * @return array{estado: string, citas: array, truncado: bool, limite: int}
+     * @param array<string,mixed> $criterios
+     * @return array{valido: bool, errores: array<string,string>, criterios: array<string,mixed>}
      */
-    public function listarCitas(mixed $estado = null): array {
-        $estado = (is_string($estado) && in_array($estado, self::ESTADOS_FILTRO, true))
-            ? $estado
-            : self::FILTRO_PREDETERM;
+    public function validarFiltros(array $criterios): array {
+        $errores = [];
+        $limpios = [
+            'estado'         => null,
+            'fecha_desde'    => null,
+            'fecha_hasta'    => null,
+            'id_veterinario' => null,
+            'q'              => null,
+        ];
+
+        // 1. Validar estado: solo se admiten Programada, Atendida, Cancelada o Todas (T-055)
+        if (isset($criterios['estado']) && $criterios['estado'] !== '' && $criterios['estado'] !== null) {
+            $estado = is_string($criterios['estado']) ? trim($criterios['estado']) : '';
+            if (!in_array($estado, self::ESTADOS_FILTRO, true)) {
+                $errores['estado'] = 'Estado de cita no válido: solo se admiten Programada, Atendida o Cancelada.';
+            } else {
+                $limpios['estado'] = $estado;
+            }
+        } else {
+            $limpios['estado'] = self::FILTRO_PREDETERM;
+        }
+
+        // 2. Validar fecha_desde
+        if (isset($criterios['fecha_desde']) && $criterios['fecha_desde'] !== '' && $criterios['fecha_desde'] !== null) {
+            $fd = is_string($criterios['fecha_desde']) ? trim($criterios['fecha_desde']) : '';
+            if (!self::esFechaValida($fd)) {
+                $errores['fecha_desde'] = 'La fecha inicial no tiene un formato válido (AAAA-MM-DD).';
+            } else {
+                $limpios['fecha_desde'] = $fd;
+            }
+        }
+
+        // 3. Validar fecha_hasta
+        if (isset($criterios['fecha_hasta']) && $criterios['fecha_hasta'] !== '' && $criterios['fecha_hasta'] !== null) {
+            $fh = is_string($criterios['fecha_hasta']) ? trim($criterios['fecha_hasta']) : '';
+            if (!self::esFechaValida($fh)) {
+                $errores['fecha_hasta'] = 'La fecha final no tiene un formato válido (AAAA-MM-DD).';
+            } else {
+                $limpios['fecha_hasta'] = $fh;
+            }
+        }
+
+        // 4. Coherencia de rango (fecha_desde <= fecha_hasta)
+        if ($limpios['fecha_desde'] !== null && $limpios['fecha_hasta'] !== null && $limpios['fecha_desde'] > $limpios['fecha_hasta']) {
+            $errores['rango_fechas'] = 'La fecha inicial no puede ser posterior a la fecha final.';
+        }
+
+        // 5. Validar id_veterinario
+        if (isset($criterios['id_veterinario']) && $criterios['id_veterinario'] !== '' && $criterios['id_veterinario'] !== null) {
+            $idVet = filter_var($criterios['id_veterinario'], FILTER_VALIDATE_INT);
+            if ($idVet === false || $idVet <= 0) {
+                $errores['id_veterinario'] = 'El médico veterinario seleccionado no es válido.';
+            } else {
+                $limpios['id_veterinario'] = $idVet;
+            }
+        }
+
+        // 6. Texto de búsqueda opcional
+        if (isset($criterios['q']) && is_string($criterios['q'])) {
+            $q = trim($criterios['q']);
+            if ($q !== '') {
+                $limpios['q'] = $q;
+            }
+        }
+
+        return [
+            'valido'    => ($errores === []),
+            'errores'   => $errores,
+            'criterios' => $limpios,
+        ];
+    }
+
+    /**
+     * Verifica que una cadena corresponda a una fecha del calendario gregoriano en formato AAAA-MM-DD.
+     */
+    private static function esFechaValida(string $fecha): bool {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return false;
+        }
+        [$y, $m, $d] = array_map('intval', explode('-', $fecha));
+        return checkdate($m, $d, $y);
+    }
+
+    /**
+     * Citas para el listado con filtros avanzados (US-05, US-08 / T-054, T-055).
+     * Admite arreglo de criterios o un estado individual para compatibilidad retrospectiva.
+     *
+     * @param array<string,mixed>|string|null $filtros
+     * @return array{estado: string, citas: array, truncado: bool, limite: int, errors: array<string,string>, filtros: array}
+     */
+    public function listarCitas(mixed $filtros = null): array {
+        // Compatibilidad retrospectiva para llamada clásica con solo string o null (US-05)
+        if (!is_array($filtros)) {
+            $estado = (is_string($filtros) && in_array($filtros, self::ESTADOS_FILTRO, true))
+                ? $filtros
+                : self::FILTRO_PREDETERM;
+
+            $filas = $this->citaRepo->listDetalle(
+                $estado === self::FILTRO_TODAS ? null : $estado,
+                self::LIMITE_LISTADO + 1
+            );
+
+            $truncado = count($filas) > self::LIMITE_LISTADO;
+            if ($truncado) {
+                $filas = array_slice($filas, 0, self::LIMITE_LISTADO);
+            }
+
+            return [
+                'estado'   => $estado,
+                'citas'    => $filas,
+                'truncado' => $truncado,
+                'limite'   => self::LIMITE_LISTADO,
+                'errors'   => [],
+                'filtros'  => ['estado' => $estado],
+            ];
+        }
+
+        // Flujo multi-criterio de US-08: validar antes de consultar (T-055)
+        $validacion = $this->validarFiltros($filtros);
+        $criterios  = $validacion['criterios'];
+        $estado     = $criterios['estado'] ?? self::FILTRO_PREDETERM;
+
+        if (!$validacion['valido']) {
+            return [
+                'estado'   => $estado,
+                'citas'    => [],
+                'truncado' => false,
+                'limite'   => self::LIMITE_LISTADO,
+                'errors'   => $validacion['errores'],
+                'filtros'  => $criterios,
+            ];
+        }
 
         $filas = $this->citaRepo->listDetalle(
-            $estado === self::FILTRO_TODAS ? null : $estado,
+            $criterios,
             self::LIMITE_LISTADO + 1
         );
 
@@ -256,7 +387,14 @@ class CitaService {
             $filas = array_slice($filas, 0, self::LIMITE_LISTADO);
         }
 
-        return ['estado' => $estado, 'citas' => $filas, 'truncado' => $truncado, 'limite' => self::LIMITE_LISTADO];
+        return [
+            'estado'   => $estado,
+            'citas'    => $filas,
+            'truncado' => $truncado,
+            'limite'   => self::LIMITE_LISTADO,
+            'errors'   => [],
+            'filtros'  => $criterios,
+        ];
     }
 
     /**
