@@ -5,6 +5,26 @@ Versiones alineadas con los Incrementos del proyecto.
 
 ---
 
+## [US-08] — 2026-10-28 — Listado Filtrable de Citas (T-054 a T-058, RF08, ARQ-01, ACC-01, SEC-01, DAT-01, UI-01, TEC-01)
+
+### Added
+- **`CitaService::validarFiltros()` y `listarCitas()` multi-criterio** — Validación estricta de filtros antes de consultar: solo se admiten estados `Programada`, `Atendida` o `Cancelada` (o `Todas`); validación de formato de fechas gregorianas (`AAAA-MM-DD`), coherencia cronológica de rango (`fecha_desde <= fecha_hasta`) y sanitización de veterinario con mensajes de error descriptivos (T-055).
+- **Barra de filtros avanzados en `Views/citas/listar.php`** — Formulario de filtrado multi-criterio con búsqueda de texto (`q`), selector de estado (`Programada`, `Atendida`, `Cancelada`, `Todas`), selector dinámico de médico veterinario, selectores de rango de fecha (`Desde` y `Hasta`) y botón de restablecimiento de filtros (T-057, UI-01).
+- **Tabla completa de gestión de citas con diseño responsivo** — Columnas estructuradas para Fecha, Hora, Mascota, Propietario, Médico Veterinario, Servicio Clínico, Estado y Acciones permitidas; acción Cancelar restringida exclusivamente a citas en estado `Programada`; empty states contextuales y adaptación fluida a tarjetas en pantallas móviles (`.tabla-escritorio`) (T-057, UI-01).
+- **`pruebas/manuales/RF08-listado-citas.md`** — Matriz de 16 casos de prueba manuales documentados que cubren cada filtro individual, combinaciones, empty states, validaciones de errores de usuario, control de acceso por rol y restricciones de acciones (T-058).
+- **`pruebas/test_citas.php` ampliado** — 10 nuevas pruebas automatizadas con `assert()` nativo (39 pruebas en total, 100% de éxito) verificando validación de estados y fechas, filtrado multi-criterio y control de acciones (T-058, TEC-01).
+- **`docs/adr/ADR-012-listado-filtrable-citas.md`** — Registro de decisión de arquitectura sobre el filtrado multi-criterio preparado, validación en la capa de servicio y diseño responsivo.
+
+### Changed
+- **`CitaModel::findAllDetalle()` y `CitaRepository::listDetalle()`** — Ampliados para soportar arreglo de criterios de filtro (`estado`, `fecha_desde`, `fecha_hasta`, `id_veterinario`, `q`) usando sentencias preparadas PDO (`SEC-01`), manteniendo intacta la proyección base `SELECT_DETALLE` y compatibilidad retrospectiva con la firma anterior (T-054).
+- **`CitaController::index()`** — Implementada la recepción y sanitización de criterios de consulta, delegación al servicio, reporte de errores de validación de filtros y preservación íntegra de filtros al navegar y recargar la vista, con restricción exclusiva para rol `administrador` (`RF08`, `ACC-01`) (T-056).
+- **`public/assets/css/citas.css`** — Incorporados estilos para `.directory-filter-date-group`, `.directory-filter-input`, `.btn-accion-cancelar` y ajustes de diseño responsivo en pantallas pequeñas (T-057, UI-01).
+
+### Decisions
+- Ver `docs/adr/ADR-012-listado-filtrable-citas.md`
+
+---
+
 ## [US-09] — 2026-10-28 — Gestión de Veterinarios y Usuarios (T-059 a T-064, RF09, UNI-01, DAT-01, BAJA-01, ACC-01, SEC-01, UI-01)
 
 ### Added

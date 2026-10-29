@@ -40,12 +40,15 @@ class CitaRepository {
     }
 
     /**
-     * Citas con detalle, opcionalmente filtradas por estado.
+     * Citas con detalle, opcionalmente filtradas por estado, rango de fechas, veterinario y datos relacionados (T-054, RF08).
      *
+     * @param array<string,mixed>|string|null $filtrosOEstado Arreglo de filtros o estado (para compatibilidad).
+     * @param int                             $limite
+     * @param int|null                        $idVeterinario
      * @return array<array<string,mixed>>
      */
-    public function listDetalle(?string $estado = null, int $limite = 200, ?int $idVeterinario = null): array {
-        return $this->model->findAllDetalle($estado, $limite, $idVeterinario);
+    public function listDetalle(array|string|null $filtrosOEstado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        return $this->model->findAllDetalle($filtrosOEstado, $limite, $idVeterinario);
     }
 
     /**

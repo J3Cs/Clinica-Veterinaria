@@ -149,27 +149,72 @@ class CitaModel extends BaseModel {
     }
 
     /**
-     * Listado de citas con detalle, de la más próxima a la más lejana.
+     * Listado de citas con detalle, de la más próxima a la más lejana (T-054, RF08).
+     * Permite filtrar opcionalmente por estado, rango de fecha (fecha_desde / fecha_hasta),
+     * veterinario y datos relacionados (búsqueda general parametrizada).
+     * Todos los parámetros opcionales son preparados con sentencias PDO (SEC-01, DAT-01).
      *
-     * @param string|null $estado        Si es null no filtra por estado.
-     * @param int|null    $idVeterinario Si se indica, solo las citas de ese veterinario.
+     * @param array<string,mixed>|string|null $filtrosOEstado Arreglo de filtros o estado (para compatibilidad).
+     * @param int                             $limite         Límite máximo de registros a retornar.
+     * @param int|null                        $idVeterinario  ID del veterinario (cuando se invoca con firma clásica).
      * @return array<array<string,mixed>>
      */
-    public function findAllDetalle(?string $estado = null, int $limite = 200, ?int $idVeterinario = null): array {
-        $sql     = self::SELECT_DETALLE;
-        $params  = [];
-        $filtros = [];
-        if ($estado !== null) {
-            $filtros[] = 'c.estado = :estado';
+    public function findAllDetalle(array|string|null $filtrosOEstado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        $sql    = self::SELECT_DETALLE;
+        $params = [];
+        $where  = [];
+
+        $estado     = null;
+        $fechaDesde = null;
+        $fechaHasta = null;
+        $idVet      = $idVeterinario;
+        $termino    = null;
+
+        if (is_array($filtrosOEstado)) {
+            $estado     = $filtrosOEstado['estado'] ?? null;
+            $fechaDesde = $filtrosOEstado['fecha_desde'] ?? null;
+            $fechaHasta = $filtrosOEstado['fecha_hasta'] ?? null;
+            $idVet      = $filtrosOEstado['id_veterinario'] ?? $idVeterinario;
+            $termino    = $filtrosOEstado['q'] ?? ($filtrosOEstado['termino'] ?? null);
+            if (isset($filtrosOEstado['limite']) && is_numeric($filtrosOEstado['limite'])) {
+                $limite = (int) $filtrosOEstado['limite'];
+            }
+        } elseif (is_string($filtrosOEstado) && $filtrosOEstado !== '') {
+            $estado = $filtrosOEstado;
+        }
+
+        // 1. Filtro por estado ('Programada', 'Atendida', 'Cancelada'; 'Todas' o null no añade filtro)
+        if ($estado !== null && $estado !== '' && $estado !== 'Todas') {
+            $where[] = 'c.estado = :estado';
             $params[':estado'] = $estado;
         }
-        if ($idVeterinario !== null) {
-            $filtros[] = 'c.id_veterinario = :id_veterinario';
-            $params[':id_veterinario'] = $idVeterinario;
+
+        // 2. Filtro por rango de fechas (fecha_desde y fecha_hasta)
+        if ($fechaDesde !== null && $fechaDesde !== '') {
+            $where[] = 'c.fecha_cita >= :fecha_desde';
+            $params[':fecha_desde'] = $fechaDesde;
         }
-        if ($filtros !== []) {
-            $sql .= ' WHERE ' . implode(' AND ', $filtros);
+        if ($fechaHasta !== null && $fechaHasta !== '') {
+            $where[] = 'c.fecha_cita <= :fecha_hasta';
+            $params[':fecha_hasta'] = $fechaHasta;
         }
+
+        // 3. Filtro por veterinario
+        if ($idVet !== null && $idVet !== '' && (int) $idVet > 0) {
+            $where[] = 'c.id_veterinario = :id_veterinario';
+            $params[':id_veterinario'] = (int) $idVet;
+        }
+
+        // 4. Filtro por datos relacionados / término de búsqueda
+        if ($termino !== null && is_string($termino) && trim($termino) !== '') {
+            $where[] = '(m.nombre LIKE :termino OR p.nombre_completo LIKE :termino OR s.nombre_servicio LIKE :termino OR u.nombre LIKE :termino)';
+            $params[':termino'] = '%' . trim($termino) . '%';
+        }
+
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
         $sql .= ' ORDER BY c.fecha_cita ASC, c.hora_cita ASC, c.id_cita ASC LIMIT ' . max(1, $limite);
 
         $stmt = $this->db->prepare($sql);
