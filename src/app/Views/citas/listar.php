@@ -220,7 +220,6 @@ $hayFiltrosActivos = (
                             <th scope="col">Médico Veterinario</th>
                             <th scope="col">Servicio</th>
                             <th scope="col">Estado</th>
-                            <th scope="col">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="citas-table-body">
@@ -303,21 +302,10 @@ $hayFiltrosActivos = (
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td data-label="Acciones">
-                                    <div class="vet-info-centered">
-                                        <?php if ($estado === 'Programada'): ?>
-                                            <a href="/citas/cancelar?id=<?= $idCita ?>" class="btn-sm btn-danger btn-accion-cancelar" title="Cancelar cita programada">
-                                                Cancelar
-                                            </a>
-                                        <?php else: ?>
-                                            <span class="text-muted" title="Cita <?= $e(strtolower($estado)) ?> (no cancelable)">—</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </td>
                             </tr>
                         <?php endforeach; ?>
                         <tr id="citas-no-matches-row" style="display: none;">
-                            <td colspan="9">
+                            <td colspan="8">
                                 <div class="empty-state" style="margin: 0.5rem 0; padding: 1.5rem;" aria-live="polite">
                                     <strong>Ninguna cita coincide con tu búsqueda rápida.</strong>
                                     <p class="text-muted" style="margin: 0.25rem 0 0;">Prueba con otro nombre de mascota, propietario, veterinario o fecha.</p>
