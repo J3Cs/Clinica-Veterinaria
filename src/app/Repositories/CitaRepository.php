@@ -40,12 +40,15 @@ class CitaRepository {
     }
 
     /**
-     * Citas con detalle, opcionalmente filtradas por estado.
+     * Citas con detalle, opcionalmente filtradas por estado, rango de fechas, veterinario y datos relacionados (T-054, RF08).
      *
+     * @param array<string,mixed>|string|null $filtrosOEstado Arreglo de filtros o estado (para compatibilidad).
+     * @param int                             $limite
+     * @param int|null                        $idVeterinario
      * @return array<array<string,mixed>>
      */
-    public function listDetalle(?string $estado = null, int $limite = 200): array {
-        return $this->model->findAllDetalle($estado, $limite);
+    public function listDetalle(array|string|null $filtrosOEstado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        return $this->model->findAllDetalle($filtrosOEstado, $limite, $idVeterinario);
     }
 
     /**
@@ -55,6 +58,24 @@ class CitaRepository {
      */
     public function cancelarSiProgramada(int $id, ?string $motivo): bool {
         return $this->model->cancelarSiProgramada($id, $motivo) === 1;
+    }
+
+    /**
+     * Lee la cita bloqueando su fila; solo dentro de una transacción.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function bloquearPorId(int $id): ?array {
+        return $this->model->bloquearPorId($id);
+    }
+
+    /**
+     * Pasa la cita a Atendida solo si está Programada.
+     *
+     * @return bool true si cambió; false si no existe o ya no estaba Programada.
+     */
+    public function marcarAtendidaSiProgramada(int $id): bool {
+        return $this->model->marcarAtendidaSiProgramada($id) === 1;
     }
 
     /**

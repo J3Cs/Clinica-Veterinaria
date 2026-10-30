@@ -1,20 +1,25 @@
 <?php
 /**
- * Pestaña «Citas»: agendar + listado — US-04 y US-05 (T-040), UI-01, SEC-01, ACC-01
+ * Pestaña «Citas»: agendar + listado filtrable — US-04, US-05 y US-08 (T-040, T-057), UI-01, SEC-01, ACC-01
+ * Homologado con el diseño de Horarios, Propietarios, Mascotas y Veterinarios.
  *
  * @var string                      $csrfToken
  * @var string|null                 $flashError
  * @var string|null                 $flashSuccess
- * @var array<string,string>        $filtros       Selección del formulario de agendar
+ * @var array<string,string>        $filtros        Selección del formulario de agendar
  * @var array<string,array>         $opciones
  * @var array<string,mixed>|null    $consulta
  * @var array<string,string>        $fieldErrors
- * @var array<array<string,mixed>>  $citas         Citas del listado
- * @var string                      $estadoFiltro  Programada | Atendida | Cancelada | Todas
+ * @var array<array<string,mixed>>  $citas          Citas del listado
+ * @var string                      $estadoFiltro   Programada | Atendida | Cancelada | Todas
+ * @var array<string,mixed>         $filtrosListado Filtros aplicados al listado
+ * @var string                      $busqueda
  * @var string                      $nombreUsuario
  * @var string                      $rolUsuario
  */
 $e = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+$busqueda = $busqueda ?? '';
+$filtrosListado = $filtrosListado ?? [];
 
 $horaRango = static function (string $hora, int $min): string {
     [$h, $m] = array_map('intval', explode(':', substr($hora, 0, 5)));
@@ -23,146 +28,313 @@ $horaRango = static function (string $hora, int $min): string {
 };
 $claseEstado = static fn(string $estado): string => 'estado-' . strtolower($estado);
 
-$filtrosEstado = ['Programada' => 'Programadas', 'Atendida' => 'Atendidas', 'Cancelada' => 'Canceladas', 'Todas' => 'Todas'];
+$filtrosEstado = [
+    'Programada' => 'Programadas',
+    'Atendida'   => 'Atendidas',
+    'Cancelada'  => 'Canceladas',
+    'Todas'      => 'Todas las citas',
+];
+
+$hayFiltrosActivos = (
+    ($busqueda !== '') ||
+    ($estadoFiltro !== 'Programada') ||
+    (!empty($filtrosListado['fecha_desde'])) ||
+    (!empty($filtrosListado['fecha_hasta'])) ||
+    (!empty($filtrosListado['id_veterinario']))
+);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Agenda de citas veterinarias">
-    <title>Citas — Clínica Veterinaria</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/assets/css/citas.css">
+    <meta name="description" content="Agenda y administración de citas veterinarias">
+    <title>Gestión de Citas — Clínica Veterinaria</title>
+    <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/citas.css?v=<?= time() ?>">
 </head>
 <body class="dashboard-page">
 
-<nav class="navbar">
-    <div class="navbar-brand">🐾 Clínica Veterinaria</div>
-    <div class="navbar-info">
-        <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
-        <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
-        <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
-        <a href="/citas" class="btn btn-sm btn-outline" aria-current="page">Citas</a>
-        <a href="/servicios" class="btn btn-sm btn-outline">Servicios</a>
-        <span class="navbar-user">
-            <?= $nombreUsuario ?> &middot; <span class="badge badge-admin"><?= ucfirst($rolUsuario) ?></span>
-        </span>
-        <a href="/logout" class="btn btn-sm btn-outline">Cerrar sesión</a>
-    </div>
-</nav>
+<?php $navActivo = 'citas'; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
 
-    <div class="citas-cabecera">
-        <h1>Citas</h1>
-        <nav class="citas-atajos" aria-label="Secciones de la página">
-            <a href="#agendar">Agendar</a>
-            <a href="#listado">Listado</a>
-        </nav>
-    </div>
-
-    <div id="alert-container" aria-live="polite">
+    <div id="alert-container" class="card-modulo" style="margin-bottom: 1rem;" aria-live="polite">
         <?php if (!empty($flashError)): ?>
             <div class="alert alert-error" role="alert">
-                <span aria-hidden="true">⚠️</span>
                 <span><?= $e($flashError) ?></span>
             </div>
         <?php endif; ?>
         <?php if (!empty($flashSuccess)): ?>
             <div class="alert alert-success" role="status">
-                <span aria-hidden="true">✅</span>
                 <span><?= $e($flashSuccess) ?></span>
             </div>
         <?php endif; ?>
         <div id="js-error-container" class="alert alert-warning" role="alert" style="display: none;">
-            <span aria-hidden="true">ℹ️</span>
             <span id="js-error-text"></span>
         </div>
     </div>
 
     <?php include __DIR__ . '/crear.php'; ?>
 
-    <section class="card" id="listado" aria-labelledby="titulo-listado">
+    <section class="card card-modulo" id="listado" aria-labelledby="titulo-listado">
         <div class="card-header-actions">
             <div>
-                <h2 id="titulo-listado">Listado de citas</h2>
-                <p class="text-muted">Ordenadas de la más próxima a la más lejana. Solo las citas Programadas pueden cancelarse.</p>
+                <h2 id="titulo-listado">Listado y Control de Citas</h2>
+                <p class="text-muted">Ordenadas de la más próxima a la más lejana. Solo las citas en estado Programada pueden cancelarse.</p>
             </div>
+            <div>
+                <a href="#agendar" class="btn btn-primary">+ Agendar Cita &uarr;</a>
+            </div>
+        </div>
 
-            <form method="GET" action="/citas" class="filtro-estado">
+        <!-- ── Buscador y Filtros Avanzados de Citas (US-08 / T-057) ── -->
+        <div class="directory-toolbar mt-1">
+            <form method="GET" action="/citas#listado" class="directory-search-form" role="search">
                 <?php if ($consulta !== null): ?>
                     <input type="hidden" name="consultar" value="1">
                     <?php foreach ($filtros as $campo => $valor): ?>
                         <input type="hidden" name="<?= $e($campo) ?>" value="<?= $e($valor) ?>">
                     <?php endforeach; ?>
                 <?php endif; ?>
-                <label for="estado" class="sr-only">Estado</label>
-                <select id="estado" name="estado" class="form-control">
+
+                <div class="directory-search-input-wrap">
+                    <input
+                        type="search"
+                        id="cita-search-input"
+                        name="q"
+                        class="directory-search-input"
+                        placeholder="Buscar por mascota, propietario, veterinario, servicio o fecha..."
+                        value="<?= $e($busqueda) ?>"
+                        autocomplete="off"
+                        aria-label="Buscar citas por mascota, propietario, veterinario, servicio o fecha"
+                    >
+                </div>
+
+                <label for="filtro_estado" class="directory-filter-label sr-only">Estado</label>
+                <select id="filtro_estado" name="estado" class="directory-filter-select" aria-label="Filtrar por estado de cita">
                     <?php foreach ($filtrosEstado as $valor => $etiqueta): ?>
                         <option value="<?= $e($valor) ?>" <?= $estadoFiltro === $valor ? 'selected' : '' ?>><?= $e($etiqueta) ?></option>
                     <?php endforeach; ?>
                 </select>
-                <button type="submit" class="btn btn-outline-dark">Filtrar</button>
+
+                <label for="filtro_veterinario" class="directory-filter-label sr-only">Médico Veterinario</label>
+                <select id="filtro_veterinario" name="filtro_veterinario" class="directory-filter-select" aria-label="Filtrar por médico veterinario">
+                    <option value="">-- Todos los veterinarios --</option>
+                    <?php foreach (($opciones['veterinarios'] ?? []) as $v): ?>
+                        <?php $idV = (int) $v['id_veterinario']; ?>
+                        <option value="<?= $idV ?>" <?= ((int)($filtrosListado['id_veterinario'] ?? 0) === $idV) ? 'selected' : '' ?>>
+                            <?= $e($v['nombre']) ?><?= !empty($v['especialidad']) ? ' (' . $e($v['especialidad']) . ')' : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <div class="directory-filter-date-group">
+                    <label for="filtro_fecha_desde" class="directory-filter-label">Desde:</label>
+                    <input
+                        type="date"
+                        id="filtro_fecha_desde"
+                        name="fecha_desde"
+                        class="directory-filter-input"
+                        value="<?= $e($filtrosListado['fecha_desde'] ?? '') ?>"
+                        aria-label="Fecha inicial desde"
+                    >
+                </div>
+
+                <div class="directory-filter-date-group">
+                    <label for="filtro_fecha_hasta" class="directory-filter-label">Hasta:</label>
+                    <input
+                        type="date"
+                        id="filtro_fecha_hasta"
+                        name="fecha_hasta"
+                        class="directory-filter-input"
+                        value="<?= $e($filtrosListado['fecha_hasta'] ?? '') ?>"
+                        aria-label="Fecha final hasta"
+                    >
+                </div>
+
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <?php if ($hayFiltrosActivos): ?>
+                    <a href="/citas#listado" class="btn btn-outline-dark">Limpiar</a>
+                <?php endif; ?>
             </form>
+
+            <div class="directory-meta">
+                <span id="cita-search-count" aria-live="polite">
+                    Mostrando <strong><?= count($citas) ?></strong> cita(s)
+                    <?php if ($busqueda !== ''): ?>
+                        para «<strong><?= $e($busqueda) ?></strong>»
+                    <?php endif; ?>
+                </span>
+            </div>
         </div>
 
         <?php if (empty($citas)): ?>
             <div class="empty-state" role="status">
-                <div class="empty-state-icon" aria-hidden="true">📅</div>
-                <h3>No hay citas <?= $estadoFiltro === 'Todas' ? '' : $e(strtolower($filtrosEstado[$estadoFiltro] ?? '')) ?></h3>
-                <p>Cuando agendes una cita aparecerá aquí.</p>
+                <p class="empty-icon" style="font-size: 2.2rem; margin-bottom: 0.5rem;">📅</p>
+                <h3>No hay citas <?= $estadoFiltro === 'Todas' ? 'registradas' : $e(strtolower($filtrosEstado[$estadoFiltro] ?? '')) ?></h3>
+                <p>No se encontraron citas médicas con los filtros actuales.</p>
+                <?php if ($hayFiltrosActivos): ?>
+                    <a href="/citas#listado" class="btn btn-outline-dark">Restablecer filtros</a>
+                <?php else: ?>
+                    <a href="#agendar" class="btn btn-primary">+ Agendar Nueva Cita</a>
+                <?php endif; ?>
             </div>
         <?php else: ?>
-            <div class="table-responsive mt-2">
-                <table class="table" id="citas-table">
+
+            <p class="table-helper-text">
+                Selecciona cualquier tarjeta de cita para ver las acciones disponibles (cancelar cita programada o consultar expediente de la mascota).
+            </p>
+
+            <!-- Barra de acción contextual al seleccionar una tarjeta (Estilo Horarios / Propietarios) -->
+            <div id="selection-action-bar" class="selection-action-bar" style="display: none;">
+                <div class="selection-info">
+                    <span class="selection-badge">Seleccionada</span>
+                    <span id="selection-summary">Cita seleccionada</span>
+                    <span id="selection-policy-hint" class="selection-policy-hint"></span>
+                </div>
+                <div class="selection-buttons">
+                    <button type="button" id="btn-ver-mascota-selected" class="btn-action-secondary">
+                        Ver Expediente de Mascota
+                    </button>
+                    <button type="button" id="btn-cancelar-cita-selected" class="btn-action-delete" style="display: none;">
+                        Cancelar Cita
+                    </button>
+                    <button type="button" id="btn-deselect-cita" class="btn-action-cancel">
+                        Deseleccionar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vista de Tarjetas Seleccionables Responsivas (T-057) -->
+            <div class="table-container-center">
+                <table class="data-table-horarios tabla-escritorio" id="citas-table">
                     <thead>
                         <tr>
-                            <th>Fecha</th>
-                            <th>Hora</th>
-                            <th>Mascota</th>
-                            <th>Servicio</th>
-                            <th>Veterinario</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
+                            <th scope="col" aria-label="Seleccionar"></th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Hora</th>
+                            <th scope="col">Mascota</th>
+                            <th scope="col">Propietario</th>
+                            <th scope="col">Médico Veterinario</th>
+                            <th scope="col">Servicio</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="citas-table-body">
                         <?php foreach ($citas as $c): ?>
-                            <tr>
-                                <td><?= $e(date('d/m/Y', (int) strtotime((string) $c['fecha_cita']))) ?></td>
-                                <td><?= $e($horaRango((string) $c['hora_cita'], (int) $c['duracion_estimada_min'])) ?></td>
+                            <?php
+                                $idCita      = (int) $c['id_cita'];
+                                $idMascota   = (int) ($c['id_mascota'] ?? 0);
+                                $estado      = (string) ($c['estado'] ?? 'Programada');
+                                $fechaFmt    = date('d/m/Y', (int) strtotime((string) $c['fecha_cita']));
+                                $durMin      = (int) ($c['duracion_estimada_min'] ?? 30);
+                                $rangoHora   = $horaRango((string) $c['hora_cita'], $durMin);
+                                $esCancelada = ($estado === 'Cancelada');
+                            ?>
+                            <tr class="horario-row cita-row <?= $esCancelada ? 'row-inactivo' : '' ?>"
+                                data-id="<?= $idCita ?>"
+                                data-id-mascota="<?= $idMascota ?>"
+                                data-mascota="<?= $e($c['mascota_nombre']) ?>"
+                                data-propietario="<?= $e($c['propietario_nombre']) ?>"
+                                data-servicio="<?= $e($c['nombre_servicio']) ?>"
+                                data-veterinario="<?= $e($c['veterinario_nombre']) ?>"
+                                data-fecha="<?= $e($fechaFmt) ?>"
+                                data-hora="<?= $e($rangoHora) ?>"
+                                data-estado="<?= $e($estado) ?>"
+                                data-resumen="<?= $e($c['mascota_nombre'] . ' — ' . $fechaFmt . ' (' . $rangoHora . ')') ?>"
+                                tabindex="0"
+                                role="button"
+                                aria-pressed="false"
+                            >
                                 <td>
-                                    <strong>🐾 <?= $e($c['mascota_nombre']) ?></strong>
-                                    <br><small class="text-muted"><?= $e($c['propietario_nombre']) ?></small>
+                                    <span class="custom-radio-indicator"></span>
                                 </td>
-                                <td><?= $e($c['nombre_servicio']) ?></td>
-                                <td><?= $e($c['veterinario_nombre']) ?></td>
-                                <td>
-                                    <span class="estado-badge <?= $e($claseEstado((string) $c['estado'])) ?>"><?= $e($c['estado']) ?></span>
-                                    <?php if ($c['estado'] === 'Cancelada' && !empty($c['motivo_cancelacion'])): ?>
-                                        <br><small class="text-muted motivo-cancelacion">Motivo: <?= $e($c['motivo_cancelacion']) ?></small>
-                                    <?php endif; ?>
+                                <td data-label="Fecha">
+                                    <span class="hora-text"><?= $e($fechaFmt) ?></span>
                                 </td>
-                                <td>
-                                    <?php if ($c['estado'] === 'Programada'): ?>
-                                        <a href="/citas/cancelar?id=<?= (int) $c['id_cita'] ?>" class="btn btn-sm btn-danger">Cancelar</a>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
-                                    <?php endif; ?>
+                                <td data-label="Hora">
+                                    <div class="vet-info-centered">
+                                        <span class="hora-text"><?= $e($rangoHora) ?></span>
+                                        <span class="vet-spec"><?= $durMin ?> min</span>
+                                    </div>
+                                </td>
+                                <td data-label="Mascota">
+                                    <div class="vet-info-centered">
+                                        <strong class="vet-name"><?= $e($c['mascota_nombre']) ?></strong>
+                                        <?php if (!empty($c['mascota_especie'])): ?>
+                                            <span class="vet-spec">(<?= $e($c['mascota_especie']) ?>)</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td data-label="Propietario">
+                                    <div class="vet-info-centered">
+                                        <span class="vet-name"><?= $e($c['propietario_nombre']) ?></span>
+                                        <?php if (!empty($c['propietario_telefono'])): ?>
+                                            <span class="vet-spec"><?= $e($c['propietario_telefono']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td data-label="Médico Veterinario">
+                                    <div class="vet-info-centered">
+                                        <span class="vet-name" style="font-size: 0.93rem;">
+                                            <?= $e($c['veterinario_nombre']) ?>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td data-label="Servicio">
+                                    <div class="vet-info-centered">
+                                        <span class="vet-name" style="font-size: 0.93rem; font-weight: 600;">
+                                            <?= $e($c['nombre_servicio']) ?>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td data-label="Estado">
+                                    <div class="vet-info-centered">
+                                        <span class="estado-badge <?= $e($claseEstado($estado)) ?>">
+                                            <?= mb_strtoupper($e($estado), 'UTF-8') ?>
+                                        </span>
+                                        <?php if ($esCancelada && !empty($c['motivo_cancelacion'])): ?>
+                                            <span class="vet-spec motivo-cancelacion" title="<?= $e($c['motivo_cancelacion']) ?>">
+                                                Motivo: <?= $e(mb_strimwidth((string) $c['motivo_cancelacion'], 0, 38, '...')) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td data-label="Acciones">
+                                    <div class="vet-info-centered">
+                                        <?php if ($estado === 'Programada'): ?>
+                                            <a href="/citas/cancelar?id=<?= $idCita ?>" class="btn-sm btn-danger btn-accion-cancelar" title="Cancelar cita programada">
+                                                Cancelar
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="text-muted" title="Cita <?= $e(strtolower($estado)) ?> (no cancelable)">—</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <tr id="citas-no-matches-row" style="display: none;">
+                            <td colspan="9">
+                                <div class="empty-state" style="margin: 0.5rem 0; padding: 1.5rem;" aria-live="polite">
+                                    <strong>Ninguna cita coincide con tu búsqueda rápida.</strong>
+                                    <p class="text-muted" style="margin: 0.25rem 0 0;">Prueba con otro nombre de mascota, propietario, veterinario o fecha.</p>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
+
             <?php if (!empty($listado['truncado'])): ?>
-                <p class="text-muted mt-2">Se muestran las primeras <?= (int) $listado['limite'] ?> citas.</p>
+                <p class="text-muted mt-2" style="text-align: center;">Se muestran las primeras <?= (int) $listado['limite'] ?> citas.</p>
             <?php endif; ?>
         <?php endif; ?>
     </section>
 </main>
 
-<script src="/assets/js/citas.js"></script>
+<script src="/assets/js/citas.js?v=<?= time() ?>"></script>
 </body>
 </html>

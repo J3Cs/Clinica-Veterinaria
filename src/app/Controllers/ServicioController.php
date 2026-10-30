@@ -25,7 +25,34 @@ class ServicioController {
     public function index(): void {
         AuthMiddleware::requireRole('administrador');
 
-        $servicios    = $this->service->listarServicios();
+        $todosServicios = $this->service->listarServicios();
+        $busqueda       = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
+        $estadoFiltro   = isset($_GET['estado']) && is_string($_GET['estado']) ? trim($_GET['estado']) : 'todos';
+        if (!in_array($estadoFiltro, ['todos', 'activos', 'inactivos'], true)) {
+            $estadoFiltro = 'todos';
+        }
+
+        $servicios = array_values(array_filter(
+            $todosServicios,
+            static function (array $s) use ($busqueda, $estadoFiltro): bool {
+                $activo = (int) ($s['activo'] ?? 0) === 1;
+                if ($estadoFiltro === 'activos' && !$activo) {
+                    return false;
+                }
+                if ($estadoFiltro === 'inactivos' && $activo) {
+                    return false;
+                }
+                if ($busqueda !== '') {
+                    $q      = mb_strtolower($busqueda, 'UTF-8');
+                    $nombre = mb_strtolower((string) ($s['nombre_servicio'] ?? ''), 'UTF-8');
+                    $desc   = mb_strtolower((string) ($s['descripcion'] ?? ''), 'UTF-8');
+                    $dur    = (string) ($s['duracion_estimada_min'] ?? '');
+                    return str_contains($nombre, $q) || str_contains($desc, $q) || str_contains($dur, $q);
+                }
+                return true;
+            }
+        ));
+
         $csrfToken    = CsrfMiddleware::generateToken();
         $flashSuccess = $_SESSION['flash_success'] ?? null;
         $flashError   = $_SESSION['flash_error']   ?? null;
@@ -108,7 +135,6 @@ class ServicioController {
         $csrfToken   = CsrfMiddleware::generateToken();
         $flashError  = $_SESSION['flash_error']  ?? null;
         $fieldErrors = $_SESSION['field_errors'] ?? [];
-        // Preferir los datos del POST anterior (tras un fallo), si no usar los del servicio
         $oldData     = $_SESSION['old_data']     ?? [];
         $modoEdicion = true;
 

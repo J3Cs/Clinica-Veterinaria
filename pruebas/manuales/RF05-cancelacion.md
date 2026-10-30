@@ -14,7 +14,7 @@ Pruebas automatizadas relacionadas:
 1. Haber aplicado `database/migrations/004_fk_restrict.sql` y `005_citas_indice_disponibilidad.sql`, y cargado `database/seeds/dev_citas_seed.sql` (ver `RF04-agendamiento.md`).
 2. Sesión de **administrador**, una mascota activa y, para CP-17, una sesión de **veterinario**.
 3. Crear al menos tres citas Programadas desde **Citas** (`/citas`) con la Dra. Mendoza en un día laborable futuro.
-4. Todavía no existe una pantalla para marcar una cita como *Atendida*. Para CP-03 se hace por SQL:
+4. Para CP-03 se necesita una cita *Atendida*: se obtiene registrando su consulta como veterinario (US-06, ver `RF06-consultas.md`) o, más rápido, por SQL:
 
 ```sql
 UPDATE citas SET estado = 'Atendida' WHERE id_cita = <id>;

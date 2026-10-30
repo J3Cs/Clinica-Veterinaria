@@ -132,8 +132,56 @@ class TestCitaModelMockUS4 extends CitaModel {
         return isset($this->items[$id]) ? $this->conDetalle($this->items[$id]) : null;
     }
 
-    public function findAllDetalle(?string $estado = null, int $limite = 200): array {
-        $res = array_filter($this->items, fn($c) => $estado === null || $c['estado'] === $estado);
+    public function findAllDetalle(array|string|null $filtrosOEstado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        $estado     = null;
+        $fechaDesde = null;
+        $fechaHasta = null;
+        $idVet      = $idVeterinario;
+        $termino    = null;
+
+        if (is_array($filtrosOEstado)) {
+            $estado     = $filtrosOEstado['estado'] ?? null;
+            $fechaDesde = $filtrosOEstado['fecha_desde'] ?? null;
+            $fechaHasta = $filtrosOEstado['fecha_hasta'] ?? null;
+            $idVet      = $filtrosOEstado['id_veterinario'] ?? $idVeterinario;
+            $termino    = $filtrosOEstado['q'] ?? ($filtrosOEstado['termino'] ?? null);
+            if (isset($filtrosOEstado['limite']) && is_numeric($filtrosOEstado['limite'])) {
+                $limite = (int) $filtrosOEstado['limite'];
+            }
+        } elseif (is_string($filtrosOEstado) && $filtrosOEstado !== '') {
+            $estado = $filtrosOEstado;
+        }
+
+        $res = array_filter($this->items, function ($c) use ($estado, $fechaDesde, $fechaHasta, $idVet, $termino) {
+            if ($estado !== null && $estado !== '' && $estado !== 'Todas' && $c['estado'] !== $estado) {
+                return false;
+            }
+            if ($fechaDesde !== null && $fechaDesde !== '' && $c['fecha_cita'] < $fechaDesde) {
+                return false;
+            }
+            if ($fechaHasta !== null && $fechaHasta !== '' && $c['fecha_cita'] > $fechaHasta) {
+                return false;
+            }
+            if ($idVet !== null && $idVet !== '' && (int) $idVet > 0 && (int) $c['id_veterinario'] !== (int) $idVet) {
+                return false;
+            }
+            if ($termino !== null && is_string($termino) && trim($termino) !== '') {
+                $q = mb_strtolower(trim($termino), 'UTF-8');
+                $d = $this->conDetalle($c);
+                $txt = mb_strtolower(
+                    ($d['mascota_nombre'] ?? '') . ' ' .
+                    ($d['propietario_nombre'] ?? '') . ' ' .
+                    ($d['nombre_servicio'] ?? '') . ' ' .
+                    ($d['veterinario_nombre'] ?? ''),
+                    'UTF-8'
+                );
+                if (!str_contains($txt, $q)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
         usort($res, fn($a, $b) => [$a['fecha_cita'], $a['hora_cita'], $a['id_cita']] <=> [$b['fecha_cita'], $b['hora_cita'], $b['id_cita']]);
         return array_map(fn($c) => $this->conDetalle($c), array_slice($res, 0, $limite));
     }
@@ -640,6 +688,180 @@ runTest('US-05: Pantalla de confirmacion — solo se ofrece para citas Programad
     foreach (['2', '3', 'abc', '99'] as $id) {
         assert($s->obtenerParaCancelar($id)['success'] === false, "No se ofrece para $id");
     }
+});
+
+// ────────────────────────────────────────────────────────────────── //
+//  US-08: Listado Filtrable de Citas (T-054 a T-058, RF08)
+// ────────────────────────────────────────────────────────────────── //
+
+runTest('US-08: Validación de filtros — estados permitidos y rechazo de estados no válidos con mensaje claro', function () {
+    [$s] = crearEscenario();
+
+    // Estados válidos
+    foreach (['Programada', 'Atendida', 'Cancelada', 'Todas', ''] as $valido) {
+        $r = $s->validarFiltros(['estado' => $valido]);
+        assert($r['valido'] === true, "Estado '$valido' debe ser válido");
+        assert(empty($r['errores']), "No debe haber errores para '$valido'");
+    }
+
+    // Estados inválidos
+    foreach (['Invalido', 'Pendiente', 'Terminada', '123', 'null'] as $invalido) {
+        $r = $s->validarFiltros(['estado' => $invalido]);
+        assert($r['valido'] === false, "Estado '$invalido' debe ser rechazado");
+        assert(isset($r['errores']['estado']), "Debe generar error de estado");
+        assert(str_contains($r['errores']['estado'], 'solo se admiten Programada, Atendida o Cancelada'), 'Mensaje claro sobre estados permitidos');
+    }
+});
+
+runTest('US-08: Validación de filtros — fechas válidas e inválidas producen mensaje claro', function () {
+    [$s] = crearEscenario();
+
+    // Fechas válidas
+    $ok = $s->validarFiltros(['fecha_desde' => '2026-10-01', 'fecha_hasta' => '2026-10-31']);
+    assert($ok['valido'] === true && empty($ok['errores']), 'Fechas válidas');
+
+    // Fechas inválidas por formato o calendario
+    $casosInvalidos = [
+        '31-10-2026', '2026/10/01', '2026-02-30', 'texto', '2026-13-01', '2026-00-10'
+    ];
+    foreach ($casosInvalidos as $fechaMala) {
+        $rDesde = $s->validarFiltros(['fecha_desde' => $fechaMala]);
+        assert($rDesde['valido'] === false && isset($rDesde['errores']['fecha_desde']), "fecha_desde '$fechaMala' rechazada");
+        assert(str_contains($rDesde['errores']['fecha_desde'], 'AAAA-MM-DD'), 'Mensaje de formato para fecha_desde');
+
+        $rHasta = $s->validarFiltros(['fecha_hasta' => $fechaMala]);
+        assert($rHasta['valido'] === false && isset($rHasta['errores']['fecha_hasta']), "fecha_hasta '$fechaMala' rechazada");
+        assert(str_contains($rHasta['errores']['fecha_hasta'], 'AAAA-MM-DD'), 'Mensaje de formato para fecha_hasta');
+    }
+});
+
+runTest('US-08: Validación de filtros — coherencia de rango de fechas (fecha_desde <= fecha_hasta)', function () {
+    [$s] = crearEscenario();
+
+    // Mismo día: permitido
+    $mismo = $s->validarFiltros(['fecha_desde' => '2026-10-28', 'fecha_hasta' => '2026-10-28']);
+    assert($mismo['valido'] === true, 'Mismo día permitido');
+
+    // fecha_desde anterior a fecha_hasta: permitido
+    $rangoOk = $s->validarFiltros(['fecha_desde' => '2026-10-01', 'fecha_hasta' => '2026-10-28']);
+    assert($rangoOk['valido'] === true, 'Rango cronológico correcto');
+
+    // fecha_desde posterior a fecha_hasta: rechazado
+    $invertido = $s->validarFiltros(['fecha_desde' => '2026-10-29', 'fecha_hasta' => '2026-10-28']);
+    assert($invertido['valido'] === false, 'Rango invertido debe ser rechazado');
+    assert(isset($invertido['errores']['rango_fechas']), 'Error específico de rango de fechas');
+    assert(str_contains($invertido['errores']['rango_fechas'], 'no puede ser posterior'), 'Mensaje claro de rango de fechas');
+});
+
+runTest('US-08: Validación de filtros — id_veterinario debe ser entero positivo', function () {
+    [$s] = crearEscenario();
+
+    $ok = $s->validarFiltros(['id_veterinario' => '2']);
+    assert($ok['valido'] === true && $ok['criterios']['id_veterinario'] === 2, 'ID veterinario válido');
+
+    foreach (['0', '-1', 'abc', '1.5'] as $malo) {
+        $r = $s->validarFiltros(['id_veterinario' => $malo]);
+        assert($r['valido'] === false && isset($r['errores']['id_veterinario']), "ID vet '$malo' rechazado");
+        assert(str_contains($r['errores']['id_veterinario'], 'no es válido'), 'Mensaje claro sobre veterinario');
+    }
+});
+
+runTest('US-08: Listado filtrable — filtrado por estado específico y Todas', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00', 'Programada');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '10:00:00', 'Atendida');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '11:00:00', 'Cancelada');
+
+    $prog = $s->listarCitas(['estado' => 'Programada']);
+    assert(count($prog['citas']) === 1 && $prog['citas'][0]['estado'] === 'Programada', 'Solo Programada');
+
+    $aten = $s->listarCitas(['estado' => 'Atendida']);
+    assert(count($aten['citas']) === 1 && $aten['citas'][0]['estado'] === 'Atendida', 'Solo Atendida');
+
+    $canc = $s->listarCitas(['estado' => 'Cancelada']);
+    assert(count($canc['citas']) === 1 && $canc['citas'][0]['estado'] === 'Cancelada', 'Solo Cancelada');
+
+    $todas = $s->listarCitas(['estado' => 'Todas']);
+    assert(count($todas['citas']) === 3, 'Todas las citas');
+});
+
+runTest('US-08: Listado filtrable — filtrado por rango de fecha', function () {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, '2026-10-20', '09:00:00', 'Programada');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, '2026-10-25', '09:00:00', 'Programada');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, '2026-10-30', '09:00:00', 'Programada');
+
+    // Filtro fecha_desde
+    $rDesde = $s->listarCitas(['estado' => 'Todas', 'fecha_desde' => '2026-10-25']);
+    assert(count($rDesde['citas']) === 2, 'Desde 2026-10-25: 2 citas');
+
+    // Filtro fecha_hasta
+    $rHasta = $s->listarCitas(['estado' => 'Todas', 'fecha_hasta' => '2026-10-25']);
+    assert(count($rHasta['citas']) === 2, 'Hasta 2026-10-25: 2 citas');
+
+    // Rango cerrado exacto
+    $rRango = $s->listarCitas(['estado' => 'Todas', 'fecha_desde' => '2026-10-22', 'fecha_hasta' => '2026-10-28']);
+    assert(count($rRango['citas']) === 1 && $rRango['citas'][0]['fecha_cita'] === '2026-10-25', 'Rango 22 a 28: solo 1 cita');
+});
+
+runTest('US-08: Listado filtrable — filtrado por médico veterinario', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00', 'Programada');
+    $citas->sembrar(MASC_OK, VET_2, SERV_CONSULTA, $FECHA, '09:00:00', 'Programada');
+
+    $rVet1 = $s->listarCitas(['estado' => 'Todas', 'id_veterinario' => VET_1]);
+    assert(count($rVet1['citas']) === 1 && (int)$rVet1['citas'][0]['id_veterinario'] === VET_1, 'Solo VET_1');
+
+    $rVet2 = $s->listarCitas(['estado' => 'Todas', 'id_veterinario' => VET_2]);
+    assert(count($rVet2['citas']) === 1 && (int)$rVet2['citas'][0]['id_veterinario'] === VET_2, 'Solo VET_2');
+});
+
+runTest('US-08: Listado filtrable — combinación de filtros (estado + rango de fecha + veterinario)', function () {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, '2026-10-25', '09:00:00', 'Programada');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, '2026-10-25', '10:00:00', 'Cancelada');
+    $citas->sembrar(MASC_OK, VET_2, SERV_CONSULTA, '2026-10-25', '09:00:00', 'Programada');
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, '2026-10-29', '09:00:00', 'Programada');
+
+    $combo = $s->listarCitas([
+        'estado'         => 'Programada',
+        'fecha_desde'    => '2026-10-24',
+        'fecha_hasta'    => '2026-10-26',
+        'id_veterinario' => VET_1,
+    ]);
+    assert(count($combo['citas']) === 1, 'Solo 1 cita coincide con los 4 criterios simultáneos');
+    assert($combo['citas'][0]['estado'] === 'Programada');
+    assert((int)$combo['citas'][0]['id_veterinario'] === VET_1);
+    assert($combo['citas'][0]['fecha_cita'] === '2026-10-25');
+});
+
+runTest('US-08: Listado filtrable — búsqueda por término relacionado y empty state', function () use ($FECHA) {
+    [$s, $citas] = crearEscenario();
+    $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00', 'Programada');
+
+    // Búsqueda por nombre de mascota
+    $rMasc = $s->listarCitas(['estado' => 'Todas', 'q' => 'Rocky']);
+    assert(count($rMasc['citas']) === 1, 'Coincide por mascota');
+
+    // Búsqueda sin coincidencias (empty state)
+    $rVacio = $s->listarCitas(['estado' => 'Todas', 'q' => 'InexistenteXYZ']);
+    assert(count($rVacio['citas']) === 0, 'Sin resultados produce lista vacía');
+
+    // Rango de fechas sin citas (empty state)
+    $rRangoVacio = $s->listarCitas(['estado' => 'Todas', 'fecha_desde' => '2020-01-01', 'fecha_hasta' => '2020-01-02']);
+    assert(count($rRangoVacio['citas']) === 0, 'Rango sin citas produce lista vacía');
+});
+
+runTest('US-08: Listado filtrable — filtros inválidos devuelven lista vacía y reporte de errores', function () {
+    [$s] = crearEscenario();
+    $res = $s->listarCitas([
+        'estado'      => 'Invalido',
+        'fecha_desde' => '2026-99-99',
+    ]);
+    assert($res['citas'] === [], 'No ejecuta consulta con filtros inválidos');
+    assert(!empty($res['errors']), 'Devuelve errores estructurados');
+    assert(isset($res['errors']['estado']), 'Error en estado');
+    assert(isset($res['errors']['fecha_desde']), 'Error en fecha');
 });
 
 echo "\n--------------------------------------------------------\n";

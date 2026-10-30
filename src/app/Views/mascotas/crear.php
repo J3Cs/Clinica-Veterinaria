@@ -19,25 +19,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Registro de mascotas de pacientes veterinarios">
     <title>Registrar Mascota — Clínica Veterinaria</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
 </head>
 <body class="dashboard-page">
 
 <!-- Barra de navegación superior -->
-<nav class="navbar">
-    <div class="navbar-brand">🐾 Clínica Veterinaria</div>
-    <div class="navbar-info">
-        <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
-        <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
-        <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
-        <a href="/citas" class="btn btn-sm btn-outline">Citas</a>
-        <a href="/servicios" class="btn btn-sm btn-outline">Servicios</a>
-        <span class="navbar-user">
-            <?= $nombreUsuario ?> &middot; <span class="badge badge-admin"><?= ucfirst($rolUsuario) ?></span>
-        </span>
-        <a href="/logout" class="btn btn-sm btn-outline">Cerrar sesión</a>
-    </div>
-</nav>
+<?php $navActivo = 'mascotas'; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
     <div class="card">
@@ -255,6 +243,6 @@
     </div>
 </main>
 
-<script src="/js/mascotas.js"></script>
+<script src="/assets/js/mascotas.js?v=<?= time() ?>"></script>
 </body>
 </html>

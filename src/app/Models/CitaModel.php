@@ -123,7 +123,10 @@ class CitaModel extends BaseModel {
         'SELECT c.id_cita, c.id_mascota, c.id_veterinario, c.id_servicio,
                 c.fecha_cita, c.hora_cita, c.estado, c.motivo_cancelacion, c.fecha_creacion,
                 m.nombre AS mascota_nombre, m.especie AS mascota_especie,
-                p.nombre_completo AS propietario_nombre,
+                m.raza AS mascota_raza, m.sexo AS mascota_sexo,
+                m.fecha_nacimiento AS mascota_fecha_nacimiento,
+                m.caracteristicas_relevantes AS mascota_caracteristicas,
+                p.nombre_completo AS propietario_nombre, p.telefono AS propietario_telefono,
                 s.nombre_servicio, s.duracion_estimada_min,
                 u.nombre AS veterinario_nombre
            FROM citas c
@@ -146,18 +149,72 @@ class CitaModel extends BaseModel {
     }
 
     /**
-     * Listado de citas con detalle, de la más próxima a la más lejana.
+     * Listado de citas con detalle, de la más próxima a la más lejana (T-054, RF08).
+     * Permite filtrar opcionalmente por estado, rango de fecha (fecha_desde / fecha_hasta),
+     * veterinario y datos relacionados (búsqueda general parametrizada).
+     * Todos los parámetros opcionales son preparados con sentencias PDO (SEC-01, DAT-01).
      *
-     * @param string|null $estado Si es null no filtra por estado.
+     * @param array<string,mixed>|string|null $filtrosOEstado Arreglo de filtros o estado (para compatibilidad).
+     * @param int                             $limite         Límite máximo de registros a retornar.
+     * @param int|null                        $idVeterinario  ID del veterinario (cuando se invoca con firma clásica).
      * @return array<array<string,mixed>>
      */
-    public function findAllDetalle(?string $estado = null, int $limite = 200): array {
+    public function findAllDetalle(array|string|null $filtrosOEstado = null, int $limite = 200, ?int $idVeterinario = null): array {
         $sql    = self::SELECT_DETALLE;
         $params = [];
-        if ($estado !== null) {
-            $sql .= ' WHERE c.estado = :estado';
+        $where  = [];
+
+        $estado     = null;
+        $fechaDesde = null;
+        $fechaHasta = null;
+        $idVet      = $idVeterinario;
+        $termino    = null;
+
+        if (is_array($filtrosOEstado)) {
+            $estado     = $filtrosOEstado['estado'] ?? null;
+            $fechaDesde = $filtrosOEstado['fecha_desde'] ?? null;
+            $fechaHasta = $filtrosOEstado['fecha_hasta'] ?? null;
+            $idVet      = $filtrosOEstado['id_veterinario'] ?? $idVeterinario;
+            $termino    = $filtrosOEstado['q'] ?? ($filtrosOEstado['termino'] ?? null);
+            if (isset($filtrosOEstado['limite']) && is_numeric($filtrosOEstado['limite'])) {
+                $limite = (int) $filtrosOEstado['limite'];
+            }
+        } elseif (is_string($filtrosOEstado) && $filtrosOEstado !== '') {
+            $estado = $filtrosOEstado;
+        }
+
+        // 1. Filtro por estado ('Programada', 'Atendida', 'Cancelada'; 'Todas' o null no añade filtro)
+        if ($estado !== null && $estado !== '' && $estado !== 'Todas') {
+            $where[] = 'c.estado = :estado';
             $params[':estado'] = $estado;
         }
+
+        // 2. Filtro por rango de fechas (fecha_desde y fecha_hasta)
+        if ($fechaDesde !== null && $fechaDesde !== '') {
+            $where[] = 'c.fecha_cita >= :fecha_desde';
+            $params[':fecha_desde'] = $fechaDesde;
+        }
+        if ($fechaHasta !== null && $fechaHasta !== '') {
+            $where[] = 'c.fecha_cita <= :fecha_hasta';
+            $params[':fecha_hasta'] = $fechaHasta;
+        }
+
+        // 3. Filtro por veterinario
+        if ($idVet !== null && $idVet !== '' && (int) $idVet > 0) {
+            $where[] = 'c.id_veterinario = :id_veterinario';
+            $params[':id_veterinario'] = (int) $idVet;
+        }
+
+        // 4. Filtro por datos relacionados / término de búsqueda
+        if ($termino !== null && is_string($termino) && trim($termino) !== '') {
+            $where[] = '(m.nombre LIKE :termino OR p.nombre_completo LIKE :termino OR s.nombre_servicio LIKE :termino OR u.nombre LIKE :termino)';
+            $params[':termino'] = '%' . trim($termino) . '%';
+        }
+
+        if ($where !== []) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
         $sql .= ' ORDER BY c.fecha_cita ASC, c.hora_cita ASC, c.id_cita ASC LIMIT ' . max(1, $limite);
 
         $stmt = $this->db->prepare($sql);
@@ -181,6 +238,41 @@ class CitaModel extends BaseModel {
         $stmt->execute([
             ':nuevo'  => self::ESTADO_CANCELADA,
             ':motivo' => $motivo,
+            ':id'     => $id,
+            ':actual' => self::ESTADO_PROGRAMADA,
+        ]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Lee la cita bloqueando su fila (SELECT ... FOR UPDATE). Solo dentro de una transacción:
+     * serializa a quien registra la consulta con quien la cancela o la atiende a la vez.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function bloquearPorId(int $id): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT id_cita, id_mascota, id_veterinario, id_servicio, fecha_cita, hora_cita, estado
+               FROM citas
+              WHERE id_cita = :id
+              FOR UPDATE'
+        );
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /**
+     * Pasa la cita a Atendida SOLO si sigue Programada (US-06).
+     *
+     * @return int Filas afectadas: 1 si cambió, 0 si no estaba Programada o no existe.
+     */
+    public function marcarAtendidaSiProgramada(int $id): int {
+        $stmt = $this->db->prepare(
+            'UPDATE citas SET estado = :nuevo WHERE id_cita = :id AND estado = :actual'
+        );
+        $stmt->execute([
+            ':nuevo'  => self::ESTADO_ATENDIDA,
             ':id'     => $id,
             ':actual' => self::ESTADO_PROGRAMADA,
         ]);

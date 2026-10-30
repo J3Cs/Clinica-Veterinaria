@@ -1,6 +1,7 @@
 <?php
 /**
  * Confirmación de cancelación de una cita — US-05 (T-040), UI-01, SEC-01
+ * Homologado con el diseño modular de Horarios, Propietarios y Mascotas.
  *
  * @var array<string,mixed> $cita        Cita con detalle (siempre Programada aquí)
  * @var string              $csrfToken
@@ -21,53 +22,61 @@ $motivoMax = \App\Services\CitaService::MOTIVO_MAX;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Confirmar la cancelación de una cita">
-    <title>Cancelar cita — Clínica Veterinaria</title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/assets/css/citas.css">
+    <title>Cancelar Cita — Clínica Veterinaria</title>
+    <link rel="stylesheet" href="/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/modulos.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="/assets/css/citas.css?v=<?= time() ?>">
 </head>
 <body class="dashboard-page">
 
-<nav class="navbar">
-    <div class="navbar-brand">🐾 Clínica Veterinaria</div>
-    <div class="navbar-info">
-        <a href="/admin/dashboard" class="btn btn-sm btn-outline">Dashboard</a>
-        <a href="/propietarios" class="btn btn-sm btn-outline">Propietarios</a>
-        <a href="/mascotas" class="btn btn-sm btn-outline">Mascotas</a>
-        <a href="/citas" class="btn btn-sm btn-outline" aria-current="page">Citas</a>
-        <a href="/servicios" class="btn btn-sm btn-outline">Servicios</a>
-        <span class="navbar-user">
-            <?= $nombreUsuario ?> &middot; <span class="badge badge-admin"><?= ucfirst($rolUsuario) ?></span>
-        </span>
-        <a href="/logout" class="btn btn-sm btn-outline">Cerrar sesión</a>
-    </div>
-</nav>
+<?php $navActivo = 'citas'; include __DIR__ . '/../partials/navbar.php'; ?>
 
 <main class="container mt-2">
-    <div class="card card-confirmacion">
-        <h2>Cancelar cita</h2>
-        <p class="text-muted">Revisa los datos. Al cancelar, el horario quedará libre para otra cita.</p>
+    <div class="card card-modulo card-confirmacion">
+        <div class="card-header-actions">
+            <div>
+                <h2>
+                    Confirmar Cancelación de Cita
+                    <span class="estado-badge estado-programada"><?= mb_strtoupper($e($cita['estado']), 'UTF-8') ?></span>
+                </h2>
+                <p class="text-muted">Revisa los detalles antes de confirmar. Al cancelar esta cita, la franja horaria quedará libre inmediatamente en la agenda del veterinario.</p>
+            </div>
+            <div>
+                <a href="/citas#listado" class="btn btn-sm btn-outline-dark">&larr; Volver al listado</a>
+            </div>
+        </div>
 
         <?php if (!empty($flashError)): ?>
-            <div class="alert alert-error" role="alert">
-                <span aria-hidden="true">⚠️</span>
+            <div class="alert alert-error mt-1" role="alert">
                 <span><?= $e($flashError) ?></span>
             </div>
         <?php endif; ?>
 
-        <dl class="resumen-cita">
-            <dt>Estado actual</dt>
-            <dd><span class="estado-badge estado-programada"><?= $e($cita['estado']) ?></span></dd>
-            <dt>Mascota</dt>
-            <dd><?= $e($cita['mascota_nombre']) ?> (<?= $e($cita['mascota_especie']) ?>) — <?= $e($cita['propietario_nombre']) ?></dd>
-            <dt>Servicio</dt>
-            <dd><?= $e($cita['nombre_servicio']) ?></dd>
-            <dt>Veterinario</dt>
-            <dd><?= $e($cita['veterinario_nombre']) ?></dd>
-            <dt>Fecha</dt>
-            <dd><?= $e(date('d/m/Y', (int) strtotime((string) $cita['fecha_cita']))) ?></dd>
-            <dt>Hora</dt>
-            <dd><?= $e($rango) ?></dd>
-        </dl>
+        <div class="detail-grid mt-1">
+            <div class="detail-stat-card">
+                <div class="detail-stat-label">Paciente y Propietario</div>
+                <div class="detail-stat-value" style="font-size: 1.05rem;">
+                    <?= $e($cita['mascota_nombre']) ?> <small class="text-muted">(<?= $e($cita['mascota_especie']) ?>)</small>
+                </div>
+                <div class="vet-spec" style="margin-top: 0.25rem;"><?= $e($cita['propietario_nombre']) ?></div>
+            </div>
+            <div class="detail-stat-card">
+                <div class="detail-stat-label">Servicio Clínico</div>
+                <div class="detail-stat-value" style="font-size: 1.05rem;"><?= $e($cita['nombre_servicio']) ?></div>
+                <div class="vet-spec" style="margin-top: 0.25rem;">Duración: <?= (int) $cita['duracion_estimada_min'] ?> min</div>
+            </div>
+            <div class="detail-stat-card">
+                <div class="detail-stat-label">Médico Veterinario</div>
+                <div class="detail-stat-value" style="font-size: 1.05rem;"><?= $e($cita['veterinario_nombre']) ?></div>
+            </div>
+            <div class="detail-stat-card">
+                <div class="detail-stat-label">Fecha y Horario</div>
+                <div class="detail-stat-value" style="font-size: 1.05rem;">
+                    <?= $e(date('d/m/Y', (int) strtotime((string) $cita['fecha_cita']))) ?>
+                </div>
+                <div class="vet-spec" style="margin-top: 0.25rem;"><?= $e($rango) ?></div>
+            </div>
+        </div>
 
         <form id="form-cancelar" method="POST" action="/citas/cancelar">
             <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
@@ -76,17 +85,18 @@ $motivoMax = \App\Services\CitaService::MOTIVO_MAX;
             <div class="form-group">
                 <label for="motivo">Motivo de la cancelación <span class="text-muted">(opcional)</span></label>
                 <textarea id="motivo" name="motivo" rows="3" maxlength="<?= (int) $motivoMax ?>"
-                          class="form-control" placeholder="Por ejemplo: el propietario no puede asistir"></textarea>
+                          class="form-control" placeholder="Por ejemplo: el propietario solicitó reprogramar o no puede asistir..."></textarea>
+                <small class="form-hint">Máximo <?= (int) $motivoMax ?> caracteres. Quedará registrado en el historial de citas canceladas.</small>
             </div>
 
-            <div class="form-actions">
-                <button type="submit" class="btn btn-danger">Sí, cancelar cita</button>
-                <a href="/citas" class="btn btn-outline-dark">No, volver al listado</a>
+            <div class="form-actions mt-2">
+                <button type="submit" class="btn btn-danger">Sí, Cancelar Cita</button>
+                <a href="/citas#listado" class="btn btn-outline-dark">No, Conservar Cita</a>
             </div>
         </form>
     </div>
 </main>
 
-<script src="/assets/js/citas.js"></script>
+<script src="/assets/js/citas.js?v=<?= time() ?>"></script>
 </body>
 </html>

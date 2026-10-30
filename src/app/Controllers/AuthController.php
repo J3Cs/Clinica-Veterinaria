@@ -1,6 +1,7 @@
 <?php
 namespace App\Controllers;
 
+use App\Config\Navegacion;
 use App\Services\AuthService;
 use App\Middlewares\CsrfMiddleware;
 
@@ -102,17 +103,7 @@ class AuthController {
      * @param string|null $role
      */
     public function redirectByRole(?string $role): void {
-        if ($role === 'administrador') {
-            header('Location: /admin/dashboard');
-            exit;
-        }
-
-        if ($role === 'veterinario') {
-            header('Location: /veterinario/agenda');
-            exit;
-        }
-
-        header('Location: /dashboard');
+        header('Location: ' . Navegacion::inicio($role));
         exit;
     }
 }

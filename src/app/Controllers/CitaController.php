@@ -53,10 +53,27 @@ class CitaController {
         $fieldErrors = $_SESSION['field_errors'] ?? [];
         unset($_SESSION['field_errors']);
 
-        // Listado
-        $listado      = $this->service->listarCitas($_GET['estado'] ?? null);
-        $citas        = $listado['citas'];
-        $estadoFiltro = $listado['estado'];
+        // Criterios para el listado filtrable de citas (T-056, RF08)
+        $criteriosListado = [
+            'estado'         => $_GET['estado'] ?? 'Programada',
+            'fecha_desde'    => $_GET['fecha_desde'] ?? null,
+            'fecha_hasta'    => $_GET['fecha_hasta'] ?? null,
+            'id_veterinario' => $_GET['filtro_veterinario'] ?? ($_GET['id_veterinario_filtro'] ?? ($_GET['id_veterinario'] ?? null)),
+            'q'              => $_GET['q'] ?? null,
+        ];
+
+        // Consulta filtrada en servicio con validación previa (T-055, T-056)
+        $listado = $this->service->listarCitas($criteriosListado);
+
+        // Si la validación de filtros arrojó errores, notificar al usuario
+        if (!empty($listado['errors'])) {
+            $flashError = implode(' ', $listado['errors']);
+        }
+
+        $citas          = $listado['citas'];
+        $estadoFiltro   = $listado['estado'];
+        $filtrosListado = $listado['filtros'] ?? [];
+        $busqueda       = isset($filtrosListado['q']) && is_string($filtrosListado['q']) ? $filtrosListado['q'] : (isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '');
 
         $nombreUsuario = htmlspecialchars($_SESSION['nombre'] ?? '', ENT_QUOTES, 'UTF-8');
         $rolUsuario    = htmlspecialchars($_SESSION['rol']    ?? '', ENT_QUOTES, 'UTF-8');

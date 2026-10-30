@@ -5,13 +5,12 @@ use App\Repositories\HorarioAtencionRepository;
 use App\Repositories\VeterinarioRepository;
 use App\Models\CitaModel;
 use DateTimeImmutable;
-use InvalidArgumentException;
 
 /**
- * HorariosServicio — US-11 (T-072), ARQ-01, ACC-01, SEC-01, CIT-01, BAJA-01
+ * HorariosService — US-11 (T-072), ARQ-01, ACC-01, SEC-01, CIT-01, BAJA-01
  * Lógica de negocio y validación estricta para franjas horarias de atención médica.
  */
-class HorariosServicio {
+class HorariosService {
 
     private HorarioAtencionRepository $horarioRepo;
     private VeterinarioRepository $vetRepo;
@@ -81,7 +80,6 @@ class HorariosServicio {
         $horaInicio    = $val['hora_inicio'];
         $horaFin       = $val['hora_fin'];
 
-        // Verificar solapamientos con franjas existentes del mismo veterinario
         $solapadas = $this->horarioRepo->findSolapadas($idVeterinario, $diaSemana, $horaInicio, $horaFin);
         if (!empty($solapadas)) {
             $f = $solapadas[0];
@@ -129,7 +127,6 @@ class HorariosServicio {
         $horaInicio = $val['hora_inicio'];
         $horaFin    = $val['hora_fin'];
 
-        // Verificar solapamiento excluyendo la misma franja
         $solapadas = $this->horarioRepo->findSolapadas($idVeterinario, $diaSemana, $horaInicio, $horaFin, $idHorario);
         if (!empty($solapadas)) {
             $f = $solapadas[0];
@@ -145,7 +142,6 @@ class HorariosServicio {
             ];
         }
 
-        // Verificar impacto en citas programadas futuras (CIT-01)
         $afectadas = $this->comprobarCitasAfectadasPorModificacion($horarioActual, $diaSemana, $horaInicio, $horaFin);
         if (!empty($afectadas)) {
             $detalles = array_map(function($c) {
@@ -186,7 +182,6 @@ class HorariosServicio {
         $horaInicio    = $horarioActual['hora_inicio'];
         $horaFin       = $horarioActual['hora_fin'];
 
-        // Comprobar citas futuras programadas que caen en este horario
         $citasFuturas = $this->citaModel->findProgramadasFuturasByVeterinario($idVeterinario);
         $afectadas = [];
 
@@ -200,9 +195,7 @@ class HorariosServicio {
             $finCitaSec = strtotime($inicioCita) + (((int)$cita['duracion_estimada_min']) * 60);
             $finCita    = date('H:i:s', $finCitaSec);
 
-            // Verificar si caía en esta franja
             if ($inicioCita >= $horaInicio && $finCita <= $horaFin) {
-                // Verificar si existe otra franja para el mismo veterinario que aún la cubra
                 $otrasFranjas = $this->horarioRepo->listByVeterinarioYDia($idVeterinario, $diaSemana);
                 $cubiertaPorOtra = false;
                 foreach ($otrasFranjas as $otra) {
@@ -274,14 +267,11 @@ class HorariosServicio {
             $finCitaSec = strtotime($inicioCita) + (((int)$cita['duracion_estimada_min']) * 60);
             $finCita    = date('H:i:s', $finCitaSec);
 
-            // Ver si la cita caía dentro del horario antes de modificarlo
             if ($inicioCita >= $horaInicioAnt && $finCita <= $horaFinAnt) {
-                // Comprobar si sigue estando cubierta bajo el nuevo horario
                 $sigueCubierta = false;
                 if ($nuevoDia === $diaActual && $inicioCita >= $nuevaHoraInicio && $finCita <= $nuevaHoraFin) {
                     $sigueCubierta = true;
                 } else {
-                    // O si otra franja distinta la cubre
                     $otrasFranjas = $this->horarioRepo->listByVeterinarioYDia($idVeterinario, $diaActual);
                     foreach ($otrasFranjas as $otra) {
                         if ((int)$otra['id_horario'] === $idHorario) {
@@ -312,7 +302,6 @@ class HorariosServicio {
     public function validarDatos(array $datos): array {
         $fieldErrors = [];
 
-        // Validar veterinario
         $idVeterinario = filter_var($datos['id_veterinario'] ?? null, FILTER_VALIDATE_INT);
         if (!$idVeterinario || $idVeterinario <= 0) {
             $fieldErrors['id_veterinario'] = 'Seleccione un veterinario válido.';
@@ -323,13 +312,11 @@ class HorariosServicio {
             }
         }
 
-        // Validar día de la semana (1 = Lunes, 7 = Domingo)
         $diaSemana = filter_var($datos['dia_semana'] ?? null, FILTER_VALIDATE_INT);
         if ($diaSemana === false || $diaSemana < 1 || $diaSemana > 7) {
             $fieldErrors['dia_semana'] = 'El día de la semana debe ser un valor entre 1 (Lunes) y 7 (Domingo).';
         }
 
-        // Validar formato de horas
         $horaInicioRaw = trim((string)($datos['hora_inicio'] ?? ''));
         $horaFinRaw    = trim((string)($datos['hora_fin'] ?? ''));
 
@@ -347,7 +334,6 @@ class HorariosServicio {
             if ($normInicio >= $normFin) {
                 $fieldErrors['hora_inicio'] = 'La hora de inicio debe preceder a la hora de fin.';
             } else {
-                // Validación de duración mínima razonable (al menos 15 minutos)
                 $secDiff = strtotime($normFin) - strtotime($normInicio);
                 if ($secDiff < 900) {
                     $fieldErrors['hora_fin'] = 'La franja debe tener una duración mínima de al menos 15 minutos.';

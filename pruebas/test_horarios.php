@@ -54,7 +54,7 @@ use App\Models\VeterinarioModel;
 use App\Models\CitaModel;
 use App\Repositories\HorarioAtencionRepository;
 use App\Repositories\VeterinarioRepository;
-use App\Services\HorariosServicio;
+use App\Services\HorariosService;
 
 // ── Dobles de Prueba en Memoria (Mocks) ────────────────────────── //
 
@@ -229,7 +229,7 @@ $citaModelMock = new TestCitaModelMock([
     ]
 ]);
 
-$service = new HorariosServicio($horarioRepo, $vetRepo, $citaModelMock);
+$service = new HorariosService($horarioRepo, $vetRepo, $citaModelMock);
 
 // ── Test 1: Validación - Rechazar día de la semana fuera de rango (< 1) ── //
 runTest("T-072: Rechazar dia_semana < 1 (fuera de rango)", function() use ($service) {
@@ -382,9 +382,9 @@ runTest("T-072: Permitir eliminación de franja libre de citas", function() use 
 
 // ── Test 14: Mapeo completo de nombres de días 1 a 7 ── //
 runTest("T-074: Días de la semana indexados 1 a 7", function() {
-    assert(HorariosServicio::DIAS_SEMANA[1] === 'Lunes');
-    assert(HorariosServicio::DIAS_SEMANA[7] === 'Domingo');
-    assert(count(HorariosServicio::DIAS_SEMANA) === 7);
+    assert(HorariosService::DIAS_SEMANA[1] === 'Lunes');
+    assert(HorariosService::DIAS_SEMANA[7] === 'Domingo');
+    assert(count(HorariosService::DIAS_SEMANA) === 7);
 });
 
 // ── Resumen ─────────────────────────────────────────────────────── //
