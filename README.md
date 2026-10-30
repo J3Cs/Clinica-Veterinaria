@@ -9,7 +9,6 @@ Sistema web para la gestión clínica veterinaria. Desarrollado en **PHP nativo,
 | Backend | PHP 8.x nativo (sin Composer packages) |
 | Base de datos | MySQL 8 via PDO |
 | Frontend | HTML5 + CSS3 propio (sin Bootstrap) |
-| Infraestructura | Docker + Docker Compose |
 
 ## Estructura del Proyecto
 
@@ -33,9 +32,7 @@ Clinica-Veterinaria/
 │   └── test_consultas_integracion.php ← US-06 contra MySQL real (rollback y concurrencia)
 ├── init.sql                      ← Esquema completo de la BD (9 tablas)
 ├── init_admin.php                ← Script CLI para crear el primer admin
-├── init_veterinario.php          ← Script CLI para dar acceso a un veterinario (hasta US-09/US-11)
-├── docker-compose.yml
-├── Dockerfile
+├── init_veterinario.php          ← Script CLI para dar acceso a un veterinario (hasta US-09US-11)
 └── src/
     ├── app/
     │   ├── Config/
@@ -54,18 +51,6 @@ Clinica-Veterinaria/
         └── js/                   (JavaScript nativo de soporte visual)
 ```
 
-## Inicio rápido con Docker
-
-```bash
-# 1. Levantar contenedores (PHP + MySQL)
-docker-compose up -d
-
-# 2. Crear el primer administrador (solo una vez)
-docker exec -it <nombre_contenedor_app> php /var/www/html/init_admin.php
-
-# 3. Abrir en el navegador
-#    http://localhost
-```
 
 ## Inicio con XAMPP
 
