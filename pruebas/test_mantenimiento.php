@@ -500,6 +500,22 @@ class MockVeterinarioModelUS12 extends VeterinarioModel {
         ];
     }
 
+    public function existsLicenciaMedica(string $licencia, ?int $excludeIdVeterinario = null): bool {
+        $lic = mb_strtolower(trim($licencia));
+        if ($lic === '') {
+            return false;
+        }
+        foreach ($this->store->veterinarios as $id => $v) {
+            if (mb_strtolower((string) ($v['licencia_medica'] ?? '')) === $lic) {
+                if ($excludeIdVeterinario !== null && (int) ($v['id_veterinario'] ?? $id) === $excludeIdVeterinario) {
+                    continue;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function update(int $idVeterinario, array $data): bool {
         if (!isset($this->store->veterinarios[$idVeterinario])) return false;
         foreach (['especialidad', 'telefono', 'licencia_medica'] as $k) {

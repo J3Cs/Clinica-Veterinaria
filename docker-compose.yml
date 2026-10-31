@@ -1,4 +1,4 @@
-services:
+﻿services:
   app:
     build:
       context: .
@@ -9,6 +9,7 @@ services:
       - "8080:80"
     volumes:
       - ./src:/var/www/html
+      - ./pruebas:/var/www/html/pruebas
     environment:
       - DB_HOST=db
       - DB_NAME=clinica_veterinaria
