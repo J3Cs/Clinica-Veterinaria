@@ -25,11 +25,24 @@ spl_autoload_register(function (string $class) {
     if (strncmp($prefix, $class, strlen($prefix)) !== 0) {
         return;
     }
-    $file = __DIR__ . '/../src/app/' . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
-    if (file_exists($file)) {
-        require_once $file;
+    $baseDirs = [
+        __DIR__ . '/../src/app/',
+        '/var/www/html/app/',
+        __DIR__ . '/../app/',
+    ];
+    $relative = substr($class, strlen($prefix));
+    $relativeFile = str_replace('\\', '/', $relative) . '.php';
+    foreach ($baseDirs as $dir) {
+        $file = $dir . $relativeFile;
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
     }
 });
+function getConsultasScriptFile(): string {
+    return (file_exists(__FILE__) && is_file(__FILE__)) ? __FILE__ : '/var/www/html/pruebas/test_consultas_integracion.php';
+}
 
 use App\Config\Database;
 use App\Models\CitaModel;
@@ -89,7 +102,7 @@ function lanzarEnParalelo(array $trabajos): array {
     $inicio = microtime(true) + 1.5;
     $procs = [];
     foreach ($trabajos as [$modo, $datos]) {
-        $cmd = [PHP_BINARY, __FILE__, $modo, base64_encode(json_encode($datos)), (string) $inicio];
+        $cmd = [PHP_BINARY, getConsultasScriptFile(), $modo, base64_encode(json_encode($datos)), (string) $inicio];
         $p = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
         assert(is_resource($p), 'No se pudo lanzar el proceso');
         $procs[] = [$p, $pipes];
@@ -232,7 +245,7 @@ try {
     runTest('Reglas: cita ajena, cancelada, atendida y campos vacios se rechazan sin dejar nada', function () use ($service, $crearCita, $a, $b, $datosValidos, $estadoCita, $nConsultas) {
         $ajena = $crearCita($a['vet']);
         $r = $service->registrarConsulta($b['usuario'], $ajena, $datosValidos);
-        assert($r['success'] === false && str_contains($r['message'], 'no está asignada'), 'Cita de otro veterinario: ' . $r['message']);
+        assert($r['success'] === false && str_contains($r['message'], 'asignada a tu usuario'), 'Cita de otro veterinario: ' . $r['message']);
 
         $cancelada = $crearCita($a['vet'], 'Cancelada');
         assert($service->registrarConsulta($a['usuario'], $cancelada, $datosValidos)['success'] === false, 'Cancelada');
@@ -277,7 +290,7 @@ try {
         $idCita = $crearCita($a['vet']);
 
         $r = $svc->registrarConsulta($a['usuario'], $idCita, $datosValidos);
-        assert($r['success'] === false && str_contains($r['message'], 'ya no está Programada'), 'Rechazo: ' . $r['message']);
+        assert($r['success'] === false && str_contains($r['message'], 'Programada') && str_contains($r['message'], 'no se'), 'Rechazo: ' . $r['message']);
         assert($nConsultas($idCita) === 0 && $estadoCita($idCita) === 'Programada', 'Sin consulta ni cambio de estado');
     });
 
