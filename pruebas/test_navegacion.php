@@ -198,7 +198,7 @@ runTest('Ninguna pantalla trae su propio menu: todas usan el parcial compartido'
 
     sort($usanParcial);
     $esperadas = ['citas/confirmar_cancelacion.php', 'citas/listar.php', 'consultas/crear.php', 'dashboard/admin.php',
-                  'dashboard/index.php', 'dashboard/veterinario.php', 'horarios/formulario.php', 'horarios/listar.php',
+                  'dashboard/index.php', 'dashboard/veterinario.php', 'historial/detalle.php', 'horarios/formulario.php', 'horarios/listar.php',
                   'mascotas/crear.php', 'mascotas/editar.php', 'mascotas/listar.php',
                   'propietarios/crear.php', 'propietarios/editar.php', 'propietarios/listar.php',
                   'servicios/formulario.php', 'servicios/listar.php',

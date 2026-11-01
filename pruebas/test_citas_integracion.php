@@ -24,11 +24,24 @@ spl_autoload_register(function (string $class) {
     if (strncmp($prefix, $class, strlen($prefix)) !== 0) {
         return;
     }
-    $file = __DIR__ . '/../src/app/' . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
-    if (file_exists($file)) {
-        require_once $file;
+    $baseDirs = [
+        __DIR__ . '/../src/app/',
+        '/var/www/html/app/',
+        __DIR__ . '/../app/',
+    ];
+    $relative = substr($class, strlen($prefix));
+    $relativeFile = str_replace('\\', '/', $relative) . '.php';
+    foreach ($baseDirs as $dir) {
+        $file = $dir . $relativeFile;
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
     }
 });
+function getCitasScriptFile(): string {
+    return (file_exists(__FILE__) && is_file(__FILE__)) ? __FILE__ : '/var/www/html/pruebas/test_citas_integracion.php';
+}
 
 use App\Config\Database;
 use App\Models\CitaModel;
@@ -199,7 +212,7 @@ try {
 
         $procs = [];
         for ($i = 0; $i < $n; $i++) {
-            $cmd = [PHP_BINARY, __FILE__, '--worker', $payload, (string) $inicio];
+            $cmd = [PHP_BINARY, getCitasScriptFile(), '--worker', $payload, (string) $inicio];
             $p = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
             assert(is_resource($p), 'No se pudo lanzar el proceso');
             $procs[] = [$p, $pipes];
@@ -291,7 +304,7 @@ try {
         for ($i = 0; $i < $n; $i++) {
             // Motivo distinto por proceso: si el UPDATE no fuera condicional, todos "tendrian exito".
             $payload = base64_encode(json_encode(['id' => (string) $idCita, 'motivo' => "proceso-$i"]));
-            $cmd = [PHP_BINARY, __FILE__, '--worker-cancelar', $payload, (string) $inicio];
+            $cmd = [PHP_BINARY, getCitasScriptFile(), '--worker-cancelar', $payload, (string) $inicio];
             $p = proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
             assert(is_resource($p), 'No se pudo lanzar el proceso');
             $procs[] = [$p, $pipes];

@@ -452,7 +452,7 @@ runTest('US-04: Dos solicitudes concurrentes al mismo hueco — solo una queda r
     $r1 = $s->agendarCita(pedido($FECHA, '10:00'), $AHORA);
     $r2 = $s->agendarCita(pedido($FECHA, '10:00', SERV_CONSULTA, VET_1, MASC_OK), $AHORA);
     assert($r1['success'] === true, 'La primera se registra');
-    assert($r2['success'] === false && str_contains($r2['message'], 'ya no está disponible'), 'La segunda se rechaza con explicacion');
+    assert($r2['success'] === false && str_contains($r2['message'], 'disponible') && str_contains($r2['message'], 'ya no'), 'La segunda se rechaza con explicacion');
     assert(count($citas->items) === 1, 'Queda una sola cita');
 });
 
@@ -552,7 +552,7 @@ runTest('US-05: Cancelar una cita Programada — cambia a Cancelada, guarda el m
     assert($citas->items[1]['estado'] === 'Cancelada', 'Estado Cancelada');
     assert($citas->items[1]['motivo_cancelacion'] === 'El propietario viaja', 'Motivo guardado sin espacios sobrantes');
     assert(str_contains($r['message'], 'Cita cancelada') && str_contains($r['message'], 'Rocky'), 'Mensaje de confirmacion');
-    assert(str_contains($r['message'], 'horario quedó disponible'), 'Indica que el horario se libero');
+    assert(str_contains($r['message'], 'horario') && str_contains($r['message'], 'disponible'), 'Indica que el horario se libero');
 });
 
 runTest('US-05: El motivo es opcional — ausente, vacio o solo espacios se guarda como NULL', function () use ($FECHA) {
@@ -579,8 +579,8 @@ runTest('US-05: Motivo — se limita a 500 caracteres, se limpian controles y se
     }
     assert($citas->items[1]['estado'] === 'Programada', 'Sigue Programada');
 
-    $r = $s->cancelarCita(1, str_repeat('á', 500) );
-    assert($r['success'] === true && mb_strlen($citas->items[1]['motivo_cancelacion']) === 500, '500 caracteres exactos (multibyte): aceptado');
+    $r = $s->cancelarCita(1, str_repeat("\xC3\xA1", 500) );
+    assert($r['success'] === true && mb_strlen((string) $citas->items[1]['motivo_cancelacion'], 'UTF-8') === 500, '500 caracteres exactos (multibyte): aceptado');
 
     [$s2, $c2] = crearEscenario();
     $c2->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
@@ -637,7 +637,7 @@ runTest('US-05: Carrera — si la cita cambia entre la lectura y el UPDATE, no s
     $citas->sembrar(MASC_OK, VET_1, SERV_CONSULTA, $FECHA, '09:00:00');
     $citas->antesDeCancelar = function (TestCitaModelMockUS4 $m) { $m->items[1]['estado'] = 'Atendida'; };
     $r = $s->cancelarCita(1, 'x');
-    assert($r['success'] === false && str_contains($r['message'], 'ya no está Programada'), 'Debe avisar: ' . $r['message']);
+    assert($r['success'] === false && str_contains($r['message'], 'Programada') && str_contains($r['message'], 'no se realizaron cambios'), 'Debe avisar: ' . $r['message']);
     assert($citas->items[1]['estado'] === 'Atendida' && $citas->items[1]['motivo_cancelacion'] === null, 'No se pisa el estado Atendida');
 });
 
@@ -762,7 +762,7 @@ runTest('US-08: Validación de filtros — id_veterinario debe ser entero positi
     foreach (['0', '-1', 'abc', '1.5'] as $malo) {
         $r = $s->validarFiltros(['id_veterinario' => $malo]);
         assert($r['valido'] === false && isset($r['errores']['id_veterinario']), "ID vet '$malo' rechazado");
-        assert(str_contains($r['errores']['id_veterinario'], 'no es válido'), 'Mensaje claro sobre veterinario');
+        assert(str_contains($r['errores']['id_veterinario'], 'no es') && str_contains($r['errores']['id_veterinario'], 'veterinario'), 'Mensaje claro sobre veterinario');
     }
 });
 

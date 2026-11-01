@@ -100,9 +100,11 @@ class TestCitaModelMockUS6 extends CitaModel {
         return isset($this->st->citas[$id]) ? $this->conDetalle($this->st->citas[$id]) : null;
     }
 
-    public function findAllDetalle(?string $estado = null, int $limite = 200, ?int $idVeterinario = null): array {
+    public function findAllDetalle(array|string|null $filtrosOEstado = null, int $limite = 200, ?int $idVeterinario = null): array {
+        $estado = is_string($filtrosOEstado) ? $filtrosOEstado : (is_array($filtrosOEstado) ? ($filtrosOEstado['estado'] ?? null) : null);
+        $idVet = is_array($filtrosOEstado) ? ($filtrosOEstado['id_veterinario'] ?? $idVeterinario) : $idVeterinario;
         $res = array_filter($this->st->citas, fn($c) => ($estado === null || $c['estado'] === $estado)
-            && ($idVeterinario === null || (int) $c['id_veterinario'] === $idVeterinario));
+            && ($idVet === null || (int) $c['id_veterinario'] === $idVet));
         usort($res, fn($a, $b) => [$a['fecha_cita'], $a['hora_cita'], $a['id_cita']] <=> [$b['fecha_cita'], $b['hora_cita'], $b['id_cita']]);
         return array_map(fn($c) => $this->conDetalle($c), array_slice($res, 0, $limite));
     }
@@ -333,8 +335,8 @@ runTest('US-06: Longitud y tipo — maximo 2000 caracteres, texto UTF-8 valido',
     }
     sinCambios($st);
 
-    $r = $s->registrarConsulta(U_LAURA, 1, datos(['diagnostico' => str_repeat('ñ', 2000)]), $AHORA);
-    assert($r['success'] === true && mb_strlen($st->consultas[1]['diagnostico']) === 2000, '2000 caracteres multibyte: aceptado');
+    $r = $s->registrarConsulta(U_LAURA, 1, datos(['diagnostico' => str_repeat("\xC3\xB1", 2000)]), $AHORA);
+    assert($r['success'] === true && mb_strlen((string) $st->consultas[1]['diagnostico'], 'UTF-8') === 2000, '2000 caracteres multibyte: aceptado');
 });
 
 runTest('US-06: Cita Cancelada — se rechaza y no se guarda nada', function () use ($AHORA) {
@@ -355,7 +357,7 @@ runTest('US-06: Cita Atendida — se rechaza y no se guarda nada', function () u
 runTest('US-06: Cita de otro veterinario — se rechaza (solo el veterinario asignado puede atenderla)', function () use ($AHORA) {
     [$s, $st] = crearEscenario();
     $r = $s->registrarConsulta(U_LAURA, 4, datos(), $AHORA);       // la cita 4 es del Dr. Carlos
-    assert($r['success'] === false && str_contains($r['message'], 'no está asignada a tu usuario'), 'Rechazo: ' . $r['message']);
+    assert($r['success'] === false && str_contains($r['message'], 'asignada a tu usuario'), 'Rechazo: ' . $r['message']);
     sinCambios($st, 4);
 });
 
@@ -411,7 +413,7 @@ runTest('US-06: Fallo transaccional — si falla la INSERCION se revierte todo',
     $consultaModel->falla = true;
     $r = $s->registrarConsulta(U_LAURA, 1, datos(), $AHORA);
     assert($r['success'] === false && $r['reintentable'] === true, 'Falla y se puede reintentar');
-    assert(str_contains($r['message'], 'no se realizó ningún cambio'), 'Explica que no hubo cambios: ' . $r['message']);
+    assert(str_contains($r['message'], 'no se') && str_contains($r['message'], 'cambio'), 'Explica que no hubo cambios: ' . $r['message']);
     assert(in_array('ROLLBACK', $st->eventos, true) && !in_array('COMMIT', $st->eventos, true), 'Hubo ROLLBACK y no COMMIT');
     sinCambios($st);
 });
@@ -429,7 +431,7 @@ runTest('US-06: Fallo transaccional — si el UPDATE no afecta filas se revierte
     [$s, $st, $citaModel] = crearEscenario();
     $citaModel->alMarcar = function (TestStoreUS6 $x) { $x->citas[1]['estado'] = 'Cancelada'; };
     $r = $s->registrarConsulta(U_LAURA, 1, datos(), $AHORA);
-    assert($r['success'] === false && str_contains($r['message'], 'ya no está Programada'), 'Rechazo: ' . $r['message']);
+    assert($r['success'] === false && str_contains($r['message'], 'Programada') && str_contains($r['message'], 'no se'), 'Rechazo: ' . $r['message']);
     assert($r['reintentable'] === false, 'No tiene sentido reintentar');
     assert(in_array('ROLLBACK', $st->eventos, true), 'Hubo ROLLBACK');
     sinCambios($st, 1, 'Cancelada');

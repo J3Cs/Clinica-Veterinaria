@@ -16,6 +16,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 ini_set('zend.assertions', '1');
 ini_set('assert.exception', '1');
+ini_set('error_log', sys_get_temp_dir() . '/test_veterinarios_errores.log');
 
 echo "========================================================\n";
 echo " Clinica Veterinaria -- Suite de Pruebas: US-09 (RF09)\n";
@@ -381,7 +382,7 @@ runTest('T-059 / T-060 / T-061: Alta valida de veterinario crea cuenta y ficha e
     assert($authService->login('dra.rivas', 'Sofia#2026!') === true, 'El nuevo veterinario puede iniciar sesion con su cuenta inicial');
 });
 
-runTest('T-060: Atomicidad transaccional — si falla el alta de la ficha no queda usuario huerfano', function () use ($vetService, $store) {
+runTest('T-060: Atomicidad transaccional -- si falla el alta de la ficha no queda usuario huerfano', function () use ($vetService, $store) {
     $usuariosAntes = count($store->usuarios);
     $store->failNextVetInsert = true;
 
@@ -480,7 +481,7 @@ runTest('T-063: En edicion se actualiza la contrasena cuando se ingresan nuevas 
     assert($authService->login('dra.rivas', 'NuevaSofia#2027') === true, 'La nueva contrasena permite iniciar sesion');
 });
 
-runTest('T-061 / T-064: Restricciones por citas — veterinario con citas se desactiva logicamente (no se elimina)', function () use ($vetService, $authService, $store) {
+runTest('T-061 / T-064: Restricciones por citas -- veterinario con citas se desactiva logicamente (no se elimina)', function () use ($vetService, $authService, $store) {
     // Asociar una cita Programada y una Atendida a la Dra. Sofia (id_veterinario = 1)
     $store->citas[1] = [
         'id_cita'        => 1,
@@ -552,14 +553,23 @@ runTest('T-061 / T-062: Reactivacion de veterinario inactivo restablece acceso a
 });
 
 runTest('T-062 / T-063 / T-064: Verificacion de autorizacion en controlador, vistas y confirmacion JS', function () {
-    $ctrlCode = (string) file_get_contents(__DIR__ . '/../src/app/Controllers/VeterinarioController.php');
+    $srcBase = null;
+    foreach ([__DIR__ . '/../src', '/var/www/html', __DIR__ . '/..', __DIR__] as $cand) {
+        if (is_dir($cand . '/app')) {
+            $srcBase = $cand;
+            break;
+        }
+    }
+    $srcBase = $srcBase ?? (__DIR__ . '/../src');
+
+    $ctrlCode = (string) file_get_contents($srcBase . '/app/Controllers/VeterinarioController.php');
     assert(substr_count($ctrlCode, "AuthMiddleware::requireRole('administrador')") >= 6, 'Todas las acciones del controlador validan rol administrador');
     assert(substr_count($ctrlCode, 'CsrfMiddleware::validateToken') >= 3, 'Todas las acciones POST validan token CSRF');
 
-    $crearView  = (string) file_get_contents(__DIR__ . '/../src/app/Views/veterinarios/crear.php');
-    $editarView = (string) file_get_contents(__DIR__ . '/../src/app/Views/veterinarios/editar.php');
-    $listarView = (string) file_get_contents(__DIR__ . '/../src/app/Views/veterinarios/listar.php');
-    $jsCode     = (string) file_get_contents(__DIR__ . '/../src/public/assets/js/veterinarios.js');
+    $crearView  = (string) file_get_contents($srcBase . '/app/Views/veterinarios/crear.php');
+    $editarView = (string) file_get_contents($srcBase . '/app/Views/veterinarios/editar.php');
+    $listarView = (string) file_get_contents($srcBase . '/app/Views/veterinarios/listar.php');
+    $jsCode     = (string) file_get_contents($srcBase . '/public/assets/js/veterinarios.js');
 
     assert(str_contains($listarView, 'badge-vet') && str_contains($listarView, 'badge-inactivo'), 'El listado distingue estado activo/inactivo');
     assert(str_contains($crearView, 'required') && str_contains($crearView, 'name="contrasena"'), 'Al crear se solicita contrasena inicial obligatoria');
